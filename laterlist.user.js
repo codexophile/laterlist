@@ -476,8 +476,7 @@
         }
 
         deleteTab ( tabId ) {
-            if ( !confirm( 'Are you sure you want to delete this tab?' ) ) return;
-
+            // Removed confirmation
             this.data.tabs = this.data.tabs.filter( tab => tab.id !== tabId );
             if ( this.activeTab === tabId ) {
                 this.activeTab = this.data.tabs[ 0 ].id;
@@ -503,8 +502,6 @@
         }
 
         deleteContainer ( containerId ) {
-            if ( !confirm( 'Are you sure you want to delete this container?' ) ) return;
-
             const currentTab = this.getCurrentTab();
             currentTab.containers = currentTab.containers.filter( c => c.id !== containerId );
             this.saveData();
@@ -522,8 +519,6 @@
         }
 
         deleteLink ( linkId ) {
-            if ( !confirm( 'Are you sure you want to delete this link?' ) ) return;
-
             const currentTab = this.getCurrentTab();
             currentTab.containers.forEach( container => {
                 container.links = container.links.filter( link => link.id !== linkId );
@@ -534,6 +529,6 @@
     }
 
     // Initialize the app
-    if ( location.href === 'file:///D:/Mega/IDEs/JavaScript-projects/laterlist-view.html' )
+    if ( location.href.includes( 'laterlist-view.html' ) )
         new ReadLaterApp();
 } )();
