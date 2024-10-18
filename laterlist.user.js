@@ -393,6 +393,23 @@
             } );
         }
 
+        deleteContainer ( containerId ) {
+            const currentTab = this.getCurrentTab();
+            const container = currentTab.containers.find( c => c.id === containerId );
+
+            // Move all links to trash
+            if ( container && container.links ) {
+                this.data.trash.push( ...container.links );
+            }
+
+            // Remove the container
+            currentTab.containers = currentTab.containers.filter( c => c.id !== containerId );
+
+            this.saveData();
+            this.render();
+        }
+
+
         saveLink ( url, title, tabId, containerId ) {
             const tab = this.data.tabs.find( t => t.id === tabId );
             const container = tab.containers.find( c => c.id === containerId );
@@ -661,13 +678,9 @@
             if ( this.isDragging ) return; // Don't switch tabs during drag
 
             this.activeTab = tabId;
-            document.querySelectorAll( '.containers' ).forEach( cont => {
-                cont.style.display = cont.dataset.tabContent === tabId ? 'grid' : 'none';
-                cont.classList.toggle( 'active-tab', cont.dataset.tabContent === tabId );
-            } );
-            document.querySelectorAll( '.tab' ).forEach( tab => {
-                tab.classList.toggle( 'active', tab.dataset.tabId === tabId );
-            } );
+
+            // Re-render the entire view when switching between normal tabs and trash
+            this.render();
         }
 
         initSortable () {
@@ -773,13 +786,6 @@
             this.saveData();
             this.render();
             this.initSortable();
-        }
-
-        deleteContainer ( containerId ) {
-            const currentTab = this.getCurrentTab();
-            currentTab.containers = currentTab.containers.filter( c => c.id !== containerId );
-            this.saveData();
-            this.render();
         }
 
         renameContainer ( containerId ) {
