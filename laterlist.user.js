@@ -48,11 +48,50 @@
                     }
                 ]
             }
-        ]
+        ],
+        trash: [] // New trash array to store deleted links
     };
 
     // Styles
     const styles = `
+
+        .trash-tab {
+            background-color: #dc2626 !important;
+            border-color: #dc2626 !important;
+        }
+
+        .trash-container {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            padding: 12px;
+            margin-top: 20px;
+        }
+
+        .trash-link {
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            background: var(--bg-primary);
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .trash-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-restore {
+            color: #22c55e;
+        }
+
+        .empty-trash-btn {
+            background: #dc2626;
+            border-color: #dc2626;
+            margin-top: 10px;
+        }
 
             .dragging-active .containers {
             display: grid !important;
@@ -235,6 +274,10 @@
     class ReadLaterApp {
         constructor () {
             this.data = GM_getValue( 'readLaterData', DEFAULT_DATA );
+            // Initialize trash if it doesn't exist in saved data
+            if ( !this.data.trash ) {
+                this.data.trash = [];
+            }
             this.activeTab = this.data.tabs[ 0 ].id;
             this.isDragging = false;
             this.init();
@@ -255,13 +298,15 @@
         saveData () {
             GM_setValue( 'readLaterData', this.data );
         }
-
         render () {
             const app = document.getElementById( 'app' );
             app.innerHTML = `
                 <div class="header">
                     <h1>Read Later</h1>
-                    <button class="btn btn-primary" id="addTab">New Tab</button>
+                    <div>
+                        <button class="btn trash-tab" id="showTrash">Trash (${ this.data.trash.length })</button>
+                        <button class="btn btn-primary" id="addTab">New Tab</button>
+                    </div>
                 </div>
                 <div class="tabs">
                     ${ this.data.tabs.map( tab => `
@@ -273,38 +318,69 @@
                         </div>
                     `).join( '' ) }
                 </div>
-                ${ this.data.tabs.map( tab => `
-                    <div class="tab-section" data-tab-section="${ tab.id }">
-                        <div class="tab-label">${ tab.name }</div>
-                        <div class="containers ${ tab.id === this.activeTab ? 'active-tab' : '' }" 
-                             data-tab-content="${ tab.id }" 
-                             style="display: ${ tab.id === this.activeTab ? 'grid' : 'none' }">
-                            <div class="drag-indicator"></div>
-                            ${ tab.containers.map( container => `
-                                <div class="container">
-                                    <div class="container-header">
-                                        <span class="container-name" data-container-id="${ container.id }">${ container.name }</span>
-                                        <button class="btn btn-delete" data-delete-container="${ container.id }">×</button>
-                                    </div>
-                                    <div class="container-content" 
-                                         data-container-id="${ container.id }"
-                                         data-tab-id="${ tab.id }">
-                                        ${ container.links.map( link => `
-                                            <div class="link" data-link-id="${ link.id }">
-                                                <a href="${ link.url }" target="_blank">${ link.title }</a>
-                                                <button class="btn btn-delete" data-delete-link="${ link.id }">×</button>
-                                            </div>
-                                        `).join( '' ) }
-                                    </div>
-                                </div>
-                            `).join( '' ) }
-                            <button class="btn add-container-btn" data-add-container-tab="${ tab.id }">Add Container</button>
-                        </div>
-                    </div>
-                `).join( '' ) }
+                ${ this.activeTab === 'trash' ? this.renderTrash() : this.renderTabs() }
             `;
             this.attachEventListeners();
+            if ( this.activeTab !== 'trash' ) {
+                this.initSortable();
+            }
         }
+
+        renderTrash () {
+            return `
+                <div class="trash-container">
+                    <h2>Trash</h2>
+                    ${ this.data.trash.map( link => `
+                        <div class="trash-link" data-link-id="${ link.id }">
+                            <a href="${ link.url }" target="_blank">${ link.title }</a>
+                            <div class="trash-actions">
+                                <button class="btn btn-restore" data-restore-link="${ link.id }">↩</button>
+                                <button class="btn btn-delete" data-permanent-delete="${ link.id }">×</button>
+                            </div>
+                        </div>
+                    `).join( '' ) }
+                    ${ this.data.trash.length > 0 ? `
+                        <button class="btn empty-trash-btn" id="emptyTrash">Empty Trash</button>
+                    ` : '<p>Trash is empty</p>' }
+                </div>
+            `;
+        }
+
+        renderTabs () {
+            return this.data.tabs.map( tab => `
+                <div class="tab-section" data-tab-section="${ tab.id }">
+                    <div class="tab-label">${ tab.name }</div>
+                    <div class="containers ${ tab.id === this.activeTab ? 'active-tab' : '' }" 
+                         data-tab-content="${ tab.id }" 
+                         style="display: ${ tab.id === this.activeTab ? 'grid' : 'none' }">
+                        <div class="drag-indicator"></div>
+                        ${ tab.containers.map( container => `
+                            <div class="container">
+                                <div class="container-header">
+                                    <span class="container-name" data-container-id="${ container.id }">${ container.name }</span>
+                                    <button class="btn btn-delete" data-delete-container="${ container.id }">×</button>
+                                </div>
+                                <div class="container-content" 
+                                     data-container-id="${ container.id }"
+                                     data-tab-id="${ tab.id }">
+                                    ${ container.links.map( link => `
+                                        <div class="link" data-link-id="${ link.id }">
+                                            <a href="${ link.url }" 
+                                               target="_blank" 
+                                               data-move-to-trash="${ link.id }" 
+                                               data-link-url="${ link.url }">${ link.title }</a>
+                                            <button class="btn btn-delete" data-delete-link="${ link.id }">×</button>
+                                        </div>
+                                    `).join( '' ) }
+                                </div>
+                            </div>
+                        `).join( '' ) }
+                        <button class="btn add-container-btn" data-add-container-tab="${ tab.id }">Add Container</button>
+                    </div>
+                </div>
+            `).join( '' );
+        }
+
         getTemplate () {
             return `
                 <div class="header">
@@ -348,6 +424,42 @@
         }
 
         attachEventListeners () {
+
+            document.addEventListener( 'click', ( e ) => {
+
+                const deleteTab = e.target.dataset.deleteTab;
+                const deleteContainer = e.target.dataset.deleteContainer;
+                const deleteLink = e.target.dataset.deleteLink;
+                const addContainerTab = e.target.dataset.addContainerTab;
+                const moveToTrash = e.target.dataset.moveToTrash;
+                const restoreLink = e.target.dataset.restoreLink;
+                const permanentDelete = e.target.dataset.permanentDelete;
+
+                if ( deleteTab ) this.deleteTab( deleteTab );
+                if ( deleteContainer ) this.deleteContainer( deleteContainer );
+                if ( deleteLink ) this.moveToTrash( deleteLink );
+                if ( addContainerTab ) this.addContainer( addContainerTab );
+                if ( moveToTrash && e.target.tagName === 'A' ) {
+                    e.preventDefault();
+                    this.moveToTrash( moveToTrash );
+                    window.open( e.target.dataset.linkUrl, '_blank' );
+                }
+                if ( restoreLink ) this.restoreFromTrash( restoreLink );
+                if ( permanentDelete ) this.permanentDelete( permanentDelete );
+            } );
+
+            document.getElementById( 'showTrash' )?.addEventListener( 'click', () => {
+                this.activeTab = 'trash';
+                this.render();
+            } );
+
+            document.getElementById( 'emptyTrash' )?.addEventListener( 'click', () => {
+                this.data.trash = [];
+                this.saveData();
+                this.render();
+            } );
+
+
             // Tab switching
             document.querySelectorAll( '.tab' ).forEach( tab => {
                 tab.addEventListener( 'click', ( e ) => {
@@ -381,6 +493,44 @@
                     this.renameContainer( containerId );
                 } );
             } );
+        }
+
+        moveToTrash ( linkId ) {
+            const currentTab = this.getCurrentTab();
+            for ( const container of currentTab.containers ) {
+                const linkIndex = container.links.findIndex( link => link.id === linkId );
+                if ( linkIndex !== -1 ) {
+                    const [ link ] = container.links.splice( linkIndex, 1 );
+                    this.data.trash.push( link );
+                    break;
+                }
+            }
+            this.saveData();
+            this.render();
+        }
+
+        restoreFromTrash ( linkId ) {
+            const linkIndex = this.data.trash.findIndex( link => link.id === linkId );
+            if ( linkIndex !== -1 ) {
+                const [ link ] = this.data.trash.splice( linkIndex, 1 );
+                // Add to first container of first tab
+                if ( this.data.tabs[ 0 ].containers.length === 0 ) {
+                    this.data.tabs[ 0 ].containers.push( {
+                        id: 'container-' + Date.now(),
+                        name: 'Restored Items',
+                        links: []
+                    } );
+                }
+                this.data.tabs[ 0 ].containers[ 0 ].links.push( link );
+                this.saveData();
+                this.render();
+            }
+        }
+
+        permanentDelete ( linkId ) {
+            this.data.trash = this.data.trash.filter( link => link.id !== linkId );
+            this.saveData();
+            this.render();
         }
 
         switchTab ( tabId ) {
