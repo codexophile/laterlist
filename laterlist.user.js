@@ -55,6 +55,43 @@
     // Styles
     const styles = `
 
+            .laterlist-popup {
+            position: fixed;
+            background: #1a1b1e;
+            border: 1px solid #404040;
+            border-radius: 8px;
+            padding: 12px;
+            z-index: 999999;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .laterlist-popup select {
+            display: block;
+            width: 200px;
+            margin: 8px 0;
+            padding: 6px;
+            background: #2c2d31;
+            border: 1px solid #404040;
+            border-radius: 4px;
+            color: #ffffff;
+        }
+
+        .laterlist-popup button {
+            background: #6366f1;
+            border: none;
+            border-radius: 4px;
+            color: #ffffff;
+            padding: 6px 12px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .laterlist-popup button:hover {
+            background: #4f46e5;
+        }
+
         .trash-tab {
             background-color: #dc2626 !important;
             border-color: #dc2626 !important;
@@ -280,7 +317,94 @@
             }
             this.activeTab = this.data.tabs[ 0 ].id;
             this.isDragging = false;
+            // Only initialize context menu if not on the view page
+            if ( !location.href.includes( 'laterlist-view.html' ) ) {
+                this.initContextMenu();
+                return;
+            }
             this.init();
+        }
+
+        initContextMenu () {
+            document.addEventListener( 'contextmenu', ( e ) => {
+                if ( !e.ctrlKey ) return;
+                const targetAnchor = e.target.closest( 'a' );
+                if ( !targetAnchor ) return;
+                e.preventDefault();
+                this.showPopup( e, targetAnchor.href, targetAnchor.textContent.trim() );
+            } );
+        }
+
+        showPopup ( event, url, title ) {
+            // Remove any existing popup
+            const existingPopup = document.querySelector( '.laterlist-popup' );
+            if ( existingPopup ) existingPopup.remove();
+
+            const popup = document.createElement( 'div' );
+            popup.className = 'laterlist-popup';
+            popup.style.left = `${ event.pageX }px`;
+            popup.style.top = `${ event.pageY }px`;
+
+            const tabSelect = document.createElement( 'select' );
+            const containerSelect = document.createElement( 'select' );
+            const saveButton = document.createElement( 'button' );
+
+            // Populate tab select
+            this.data.tabs.forEach( tab => {
+                const option = document.createElement( 'option' );
+                option.value = tab.id;
+                option.textContent = tab.name;
+                tabSelect.appendChild( option );
+            } );
+
+            // Update container select based on selected tab
+            const updateContainers = () => {
+                containerSelect.innerHTML = '';
+                const selectedTab = this.data.tabs.find( tab => tab.id === tabSelect.value );
+                selectedTab.containers.forEach( container => {
+                    const option = document.createElement( 'option' );
+                    option.value = container.id;
+                    option.textContent = container.name;
+                    containerSelect.appendChild( option );
+                } );
+            };
+
+            tabSelect.addEventListener( 'change', updateContainers );
+            updateContainers();
+
+            saveButton.textContent = 'Save Link';
+            saveButton.addEventListener( 'click', () => {
+                this.saveLink( url, title, tabSelect.value, containerSelect.value );
+                popup.remove();
+            } );
+
+            popup.appendChild( tabSelect );
+            popup.appendChild( containerSelect );
+            popup.appendChild( saveButton );
+
+            document.body.appendChild( popup );
+
+            // Close popup when clicking outside
+            document.addEventListener( 'click', function closePopup ( e ) {
+                if ( !popup.contains( e.target ) ) {
+                    popup.remove();
+                    document.removeEventListener( 'click', closePopup );
+                }
+            } );
+        }
+
+        saveLink ( url, title, tabId, containerId ) {
+            const tab = this.data.tabs.find( t => t.id === tabId );
+            const container = tab.containers.find( c => c.id === containerId );
+
+            const newLink = {
+                id: 'link-' + Date.now(),
+                title: title || url,
+                url: url
+            };
+
+            container.links.push( newLink );
+            this.saveData();
         }
 
         init () {
@@ -537,9 +661,13 @@
             if ( this.isDragging ) return; // Don't switch tabs during drag
 
             this.activeTab = tabId;
-
-            // Re-render the entire view when switching between normal tabs and trash
-            this.render();
+            document.querySelectorAll( '.containers' ).forEach( cont => {
+                cont.style.display = cont.dataset.tabContent === tabId ? 'grid' : 'none';
+                cont.classList.toggle( 'active-tab', cont.dataset.tabContent === tabId );
+            } );
+            document.querySelectorAll( '.tab' ).forEach( tab => {
+                tab.classList.toggle( 'active', tab.dataset.tabId === tabId );
+            } );
         }
 
         initSortable () {
@@ -649,16 +777,7 @@
 
         deleteContainer ( containerId ) {
             const currentTab = this.getCurrentTab();
-            const container = currentTab.containers.find( c => c.id === containerId );
-
-            // Move all links to trash
-            if ( container && container.links ) {
-                this.data.trash.push( ...container.links );
-            }
-
-            // Remove the container
             currentTab.containers = currentTab.containers.filter( c => c.id !== containerId );
-
             this.saveData();
             this.render();
         }
@@ -684,6 +803,6 @@
     }
 
     // Initialize the app
-    if ( location.href.includes( 'laterlist-view.html' ) )
-        new ReadLaterApp();
+    new ReadLaterApp();
+
 } )();
