@@ -342,8 +342,19 @@
 
             const popup = document.createElement( 'div' );
             popup.className = 'laterlist-popup';
-            popup.style.left = `${ event.pageX }px`;
-            popup.style.top = `${ event.pageY }px`;
+            style( popup, `
+                left: ${ event.clientX }px;
+                top: ${ event.clientY }px;
+                position: fixed;
+                background: #1a1b1e;
+                border: 1px solid #404040;
+                border-radius: 8px;
+                padding: 12px;
+                z-index: 999999;
+                color: #ffffff;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            `);
 
             const tabSelect = document.createElement( 'select' );
             const containerSelect = document.createElement( 'select' );
@@ -383,6 +394,7 @@
             popup.appendChild( saveButton );
 
             document.body.appendChild( popup );
+            console.log( popup );
 
             // Close popup when clicking outside
             document.addEventListener( 'click', function closePopup ( e ) {
