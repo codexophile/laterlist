@@ -545,7 +545,7 @@
         renderTabs () {
             return this.data.tabs.map( tab => `
         <div class="tab-section" data-tab-section="${ tab.id }">
-            <div class="tab-label">${ tab.name }</div>
+            <div class="tab-label">${ tab.name } (${ tab.containers.reduce( ( acc, container ) => acc + container.links.length, 0 ) } links)</div>
             <div class="containers ${ tab.id === this.activeTab ? 'active-tab' : '' }" 
                  data-tab-content="${ tab.id }" 
                  style="display: ${ tab.id === this.activeTab ? 'grid' : 'none' }">
@@ -553,7 +553,9 @@
                 ${ tab.containers.map( container => `
                     <div class="container">
                         <div class="container-header">
-                            <span class="container-name" data-container-id="${ container.id }">${ container.name }</span>
+                            <span class="container-name" data-container-id="${ container.id }">
+                                ${ container.name } (${ container.links.length } links)
+                            </span>
                             <button class="btn btn-delete" data-delete-container="${ container.id }">×</button>
                         </div>
                         <div class="container-content" data-container-id="${ container.id }" data-tab-id="${ tab.id }">
@@ -576,8 +578,7 @@
                                            data-link-url="${ link.url }">${ link.title }</a>
                                         <button class="btn btn-delete" data-delete-link="${ link.id }">×</button>
                                     </div>
-                                `).join( '' )
-                }
+                                `).join( '' ) }
                         </div>
                     </div>
                 `).join( '' ) }
@@ -586,6 +587,7 @@
         </div>
     `).join( '' );
         }
+
 
 
         getTemplate () {
@@ -856,11 +858,10 @@
 
             this.saveData();
 
-            // Only re-render if moving between tabs
-            if ( fromTabId !== toTabId ) {
-                this.render();
-            }
+            // Re-render the UI to update link counts
+            this.render();
         }
+
 
         addTab () {
             const name = prompt( 'Enter tab name:' );
