@@ -572,11 +572,12 @@
                         </div>
                     </div>
                 `).join( '' ) }
-                <button class="btn add-container-btn" data-add-container-tab="${ tab.id }">Add Container</button>
+                <button class="btn add-container-btn" id="add-container-${ tab.id }">Add Container</button>
             </div>
         </div>
     `).join( '' );
         }
+
 
         getTemplate () {
             return `
@@ -621,38 +622,32 @@
         }
 
         //* Event listeners
+        // Modified attachEventListeners function
         attachEventListeners () {
+            // Remove all previous add container listeners
+            document.querySelectorAll( '.add-container-btn' ).forEach( btn => {
+                btn.replaceWith( btn.cloneNode( true ) );
+            } );
 
+            // Add new listeners to add container buttons
+            document.querySelectorAll( '.add-container-btn' ).forEach( btn => {
+                const tabId = btn.id.replace( 'add-container-', '' );
+                btn.addEventListener( 'click', ( e ) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.addContainer( tabId );
+                }, { once: true } ); // This ensures the listener only fires once
+            } );
+
+            // Import/Export handlers
             document.getElementById( 'importFromOneTab' )?.addEventListener( 'click', () => this.importFromOneTab() );
-
-            document.getElementById( 'toggleView' )?.addEventListener( 'click', () => this.toggleView() );
-
             document.getElementById( 'importData' )?.addEventListener( 'click', () => this.importData() );
             document.getElementById( 'exportData' )?.addEventListener( 'click', () => this.exportData() );
 
-            document.addEventListener( 'click', ( e ) => {
+            // View toggle handler
+            document.getElementById( 'toggleView' )?.addEventListener( 'click', () => this.toggleView() );
 
-                const deleteTab = e.target.dataset.deleteTab;
-                const deleteContainer = e.target.dataset.deleteContainer;
-                const deleteLink = e.target.dataset.deleteLink;
-                const addContainerTab = e.target.dataset.addContainerTab;
-                const moveToTrash = e.target.dataset.moveToTrash;
-                const restoreLink = e.target.dataset.restoreLink;
-                const permanentDelete = e.target.dataset.permanentDelete;
-
-                if ( deleteTab ) this.deleteTab( deleteTab );
-                if ( deleteContainer ) this.deleteContainer( deleteContainer );
-                if ( deleteLink ) this.moveToTrash( deleteLink );
-                if ( addContainerTab ) this.addContainer( addContainerTab );
-                if ( moveToTrash && e.target.tagName === 'A' ) {
-                    e.preventDefault();
-                    this.moveToTrash( moveToTrash );
-                    window.open( e.target.dataset.linkUrl, '_blank' );
-                }
-                if ( restoreLink ) this.restoreFromTrash( restoreLink );
-                if ( permanentDelete ) this.permanentDelete( permanentDelete );
-            } );
-
+            // Trash management handlers
             document.getElementById( 'showTrash' )?.addEventListener( 'click', () => {
                 this.activeTab = 'trash';
                 this.render();
@@ -664,8 +659,10 @@
                 this.render();
             } );
 
+            // Tab management
+            document.getElementById( 'addTab' )?.addEventListener( 'click', () => this.addTab() );
 
-            // Tab switching
+            // Tab switching and renaming
             document.querySelectorAll( '.tab' ).forEach( tab => {
                 tab.addEventListener( 'click', ( e ) => {
                     const tabId = tab.dataset.tabId;
@@ -673,34 +670,7 @@
                         this.switchTab( tabId );
                     }
                 } );
-            } );
 
-            // Delete buttons
-            document.addEventListener( 'click', ( e ) => {
-                const deleteTab = e.target.dataset.deleteTab;
-                const deleteContainer = e.target.dataset.deleteContainer;
-                const deleteLink = e.target.dataset.deleteLink;
-                const addContainerTab = e.target.dataset.addContainerTab;
-
-                if ( deleteTab ) this.deleteTab( deleteTab );
-                if ( deleteContainer ) this.deleteContainer( deleteContainer );
-                if ( deleteLink ) this.deleteLink( deleteLink );
-                if ( addContainerTab ) this.addContainer( addContainerTab );
-            } );
-
-            // Add new tab
-            document.getElementById( 'addTab' )?.addEventListener( 'click', () => this.addTab() );
-
-            // Container name edit
-            document.querySelectorAll( '.container-name' ).forEach( nameEl => {
-                nameEl.addEventListener( 'dblclick', () => {
-                    const containerId = nameEl.dataset.containerId;
-                    this.renameContainer( containerId );
-                } );
-            } );
-
-            // Tab double-click for renaming
-            document.querySelectorAll( '.tab' ).forEach( tab => {
                 tab.addEventListener( 'dblclick', ( e ) => {
                     const tabId = tab.dataset.tabId;
                     if ( tabId ) {
@@ -709,6 +679,34 @@
                 } );
             } );
 
+            // Container name editing
+            document.querySelectorAll( '.container-name' ).forEach( nameEl => {
+                nameEl.addEventListener( 'dblclick', () => {
+                    const containerId = nameEl.dataset.containerId;
+                    this.renameContainer( containerId );
+                } );
+            } );
+
+            // Main click handler for deletions and trash operations
+            document.addEventListener( 'click', ( e ) => {
+                const deleteTab = e.target.dataset.deleteTab;
+                const deleteContainer = e.target.dataset.deleteContainer;
+                const deleteLink = e.target.dataset.deleteLink;
+                const moveToTrash = e.target.dataset.moveToTrash;
+                const restoreLink = e.target.dataset.restoreLink;
+                const permanentDelete = e.target.dataset.permanentDelete;
+
+                if ( deleteTab ) this.deleteTab( deleteTab );
+                if ( deleteContainer ) this.deleteContainer( deleteContainer );
+                if ( deleteLink ) this.moveToTrash( deleteLink );
+                if ( moveToTrash && e.target.tagName === 'A' ) {
+                    e.preventDefault();
+                    this.moveToTrash( moveToTrash );
+                    window.open( e.target.dataset.linkUrl, '_blank' );
+                }
+                if ( restoreLink ) this.restoreFromTrash( restoreLink );
+                if ( permanentDelete ) this.permanentDelete( permanentDelete );
+            } );
         }
 
         moveToTrash ( linkId ) {
