@@ -55,6 +55,22 @@
     // Styles
     const styles = `
 
+    .sortable-fallback {
+    opacity: 0.8;
+    transform: scale(1.05);
+    background: var(--bg-primary);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.dragging {
+    opacity: 0.5;
+}
+
+.sortable-ghost {
+    opacity: 0.2;
+    background: var(--accent);
+}
+
             .laterlist-popup {
             position: fixed;
             background: #1a1b1e;
@@ -197,7 +213,6 @@
         }
 
         #app {
-            max-width: 1200px;
             margin: 0 auto;
         }
 
@@ -274,6 +289,9 @@
         .link a {
             color: var(--text-primary);
             text-decoration: none;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .link a:hover {
@@ -746,19 +764,24 @@
                     group: 'links',
                     animation: 150,
                     ghostClass: 'sortable-ghost',
+                    dragClass: 'sortable-drag',
+                    forceFallback: true,
+                    fallbackClass: 'sortable-fallback',
                     onStart: ( evt ) => {
                         document.body.classList.add( 'dragging-active' );
                         this.isDragging = true;
+                        evt.item.classList.add( 'dragging' );
                     },
                     onEnd: ( evt ) => {
                         document.body.classList.remove( 'dragging-active' );
                         this.isDragging = false;
+                        evt.item.classList.remove( 'dragging' );
                         this.handleLinkMove( evt );
-                        // Return to normal view after drag
-                        this.switchTab( this.activeTab );
+                        document.querySelectorAll( '.containers' ).forEach( cont => {
+                            cont.classList.remove( 'drag-hover' );
+                        } );
                     },
                     onChange: ( evt ) => {
-                        // Update drag hover effect
                         document.querySelectorAll( '.containers' ).forEach( cont => {
                             cont.classList.remove( 'drag-hover' );
                         } );
@@ -771,32 +794,67 @@
         }
 
         handleLinkMove ( evt ) {
-            const linkId = evt.item.dataset.linkId;
+            const linkEl = evt.item;
+            const linkId = linkEl.dataset.linkId;
             const toContainerId = evt.to.dataset.containerId;
             const fromContainerId = evt.from.dataset.containerId;
             const toTabId = evt.to.dataset.tabId;
             const fromTabId = evt.from.dataset.tabId;
 
+            if ( !linkId || !toContainerId || !fromContainerId || !toTabId || !fromTabId ) {
+                console.error( 'Missing required data attributes' );
+                return;
+            }
+
             // Find source and target tabs
             const fromTab = this.data.tabs.find( tab => tab.id === fromTabId );
             const toTab = this.data.tabs.find( tab => tab.id === toTabId );
+
+            if ( !fromTab || !toTab ) {
+                console.error( 'Could not find source or target tab' );
+                return;
+            }
 
             // Find source and target containers
             const fromContainer = fromTab.containers.find( c => c.id === fromContainerId );
             const toContainer = toTab.containers.find( c => c.id === toContainerId );
 
-            // Find and remove link from source
-            const linkIndex = fromContainer.links.findIndex( l => l.id === linkId );
-            if ( linkIndex === -1 ) return;
+            if ( !fromContainer || !toContainer ) {
+                console.error( 'Could not find source or target container' );
+                return;
+            }
 
-            const [ link ] = fromContainer.links.splice( linkIndex, 1 );
+            // Get the actual positions in the DOM
+            const fromLinks = Array.from( evt.from.children );
+            const toLinks = Array.from( evt.to.children );
 
-            // Add link to target
-            toContainer.links.splice( evt.newIndex, 0, link );
+            // Create a new array representing the desired order
+            const updatedFromLinks = fromContainer.links.filter( link => link.id !== linkId );
+            const movedLink = fromContainer.links.find( link => link.id === linkId );
 
+            if ( !movedLink ) {
+                console.error( 'Could not find moved link' );
+                return;
+            }
+
+            // Update the source container
+            fromContainer.links = updatedFromLinks;
+
+            // Update the target container
+            if ( fromContainerId === toContainerId && fromTabId === toTabId ) {
+                // If moving within the same container, splice the link at the new index
+                toContainer.links.splice( evt.newIndex, 0, movedLink );
+            } else {
+                // If moving to a different container, add to the target container
+                const newLinks = [ ...toContainer.links ];
+                newLinks.splice( evt.newIndex, 0, movedLink );
+                toContainer.links = newLinks;
+            }
+
+            // Save and update the view
             this.saveData();
 
-            // If moving to a hidden tab, re-render to maintain consistency
+            // Only re-render if moving between tabs
             if ( fromTabId !== toTabId ) {
                 this.render();
                 this.initSortable();
