@@ -462,6 +462,7 @@
         saveData () {
             GM_setValue( 'readLaterData', this.data );
         }
+
         render () {
             const app = document.getElementById( 'app' );
             app.innerHTML = `
@@ -469,6 +470,7 @@
                     <h1>Read Later</h1>
                     <div>
                         <button class="btn" id="importData">Import</button>
+                        <button class="btn" id="importFromOneTab">Import from OneTab</button> <!-- New Button -->
                         <button class="btn" id="exportData">Export</button>
                         <button class="btn trash-tab" id="showTrash">Trash (${ this.data.trash.length })</button>
                         <button class="btn btn-primary" id="addTab">New Tab</button>
@@ -558,8 +560,6 @@
     `).join( '' );
         }
 
-
-
         getTemplate () {
             return `
                 <div class="header">
@@ -602,7 +602,10 @@
             return this.data.tabs.find( tab => tab.id === this.activeTab );
         }
 
+        //* Event listeners
         attachEventListeners () {
+
+            document.getElementById( 'importFromOneTab' )?.addEventListener( 'click', () => this.importFromOneTab() );
 
             document.getElementById( 'toggleView' )?.addEventListener( 'click', () => this.toggleView() );
 
@@ -902,6 +905,64 @@
             };
 
             input.click();
+        }
+
+        importFromOneTab () {
+            const input = document.createElement( 'input' );
+            input.type = 'file';
+            input.accept = 'text/plain'; // OneTab exports as text (or HTML)
+
+            input.onchange = ( e ) => {
+                const file = e.target.files[ 0 ];
+                const reader = new FileReader();
+
+                reader.onload = ( event ) => {
+                    const textContent = event.target.result;
+                    const links = this.parseOneTabExport( textContent );
+
+                    if ( links.length > 0 ) {
+                        // Add the imported links to the first container of the first tab
+                        const firstTab = this.data.tabs[ 0 ];
+                        if ( firstTab.containers.length === 0 ) {
+                            firstTab.containers.push( {
+                                id: 'container-' + Date.now(),
+                                name: 'Imported from OneTab',
+                                links: []
+                            } );
+                        }
+                        const firstContainer = firstTab.containers[ 0 ];
+                        firstContainer.links.push( ...links );
+
+                        this.saveData();
+                        this.render();
+                        alert( `${ links.length } links imported successfully from OneTab!` );
+                    } else {
+                        alert( 'No valid links found in the OneTab export.' );
+                    }
+                };
+
+                reader.readAsText( file );
+            };
+
+            input.click();
+        }
+
+        parseOneTabExport ( content ) {
+            const links = [];
+
+            // Split by lines and process each line
+            const lines = content.split( '\n' ).filter( line => line.trim() !== '' );
+
+            lines.forEach( line => {
+                const urlMatch = line.match( /(https?:\/\/[^\s]+)/ ); // Simple regex to find URLs
+                if ( urlMatch ) {
+                    const url = urlMatch[ 0 ];
+                    const title = line.replace( url, '' ).trim() || url; // Use the URL as title if not found
+                    links.push( { id: 'link-' + Date.now(), title, url } );
+                }
+            } );
+
+            return links;
         }
 
         isValidDataStructure ( data ) {
