@@ -454,15 +454,15 @@
         render () {
             const app = document.getElementById( 'app' );
             app.innerHTML = `
-                <div class="header">
-                    <h1>Read Later</h1>
-                    <div>
-                        <button class="btn" id="importData">Import</button>
-                        <button class="btn" id="exportData">Export</button>
-                        <button class="btn trash-tab" id="showTrash">Trash (${ this.data.trash.length })</button>
-                        <button class="btn btn-primary" id="addTab">New Tab</button>
-                    </div>
+            <div class="header">
+                <h1>Read Later</h1>
+                <div>
+                    <button class="btn" id="importData" title="Supports Read Later JSON and OneTab backup formats">Import</button>
+                    <button class="btn" id="exportData">Export</button>
+                    <button class="btn trash-tab" id="showTrash">Trash (${ this.data.trash.length })</button>
+                    <button class="btn btn-primary" id="addTab">New Tab</button>
                 </div>
+            </div>
                 <div class="tabs">
                     ${ this.data.tabs.map( tab => `
                         <div class="tab ${ tab.id === this.activeTab ? 'active' : '' }" data-tab-id="${ tab.id }">
@@ -579,6 +579,10 @@
         }
 
         attachEventListeners () {
+
+            document.getElementById( 'importData' )?.addEventListener( 'click', () => this.importData() );
+            document.getElementById( 'exportData' )?.addEventListener( 'click', () => this.exportData() );
+
 
             document.getElementById( 'importData' )?.addEventListener( 'click', () => this.importData() );
             document.getElementById( 'exportData' )?.addEventListener( 'click', () => this.exportData() );
@@ -942,6 +946,214 @@
                         }
                     }
                 }
+            }
+        }
+
+        // Import/Export methods
+        exportData () {
+            const dataStr = JSON.stringify( this.data, null, 2 );
+            const blob = new Blob( [ dataStr ], { type: 'application/json' } );
+            const url = URL.createObjectURL( blob );
+
+            const a = document.createElement( 'a' );
+            a.href = url;
+            a.download = `read-later-backup-${ new Date().toISOString().split( 'T' )[ 0 ] }.json`;
+            document.body.appendChild( a );
+            a.click();
+            document.body.removeChild( a );
+            URL.revokeObjectURL( url );
+        }
+
+        importData () {
+            const input = document.createElement( 'input' );
+            input.type = 'file';
+            input.accept = '.json,.txt';
+
+            input.onchange = e => {
+                const file = e.target.files[ 0 ];
+                const reader = new FileReader();
+
+                reader.onload = event => {
+                    try {
+                        const content = event.target.result;
+                        let importedData;
+
+                        try {
+                            importedData = JSON.parse( content );
+                            if ( !this.isValidDataStructure( importedData ) ) {
+                                importedData = this.parseOneTabFormat( content );
+                            }
+                        } catch {
+                            importedData = this.parseOneTabFormat( content );
+                        }
+
+                        if ( confirm( 'Do you want to merge with existing data? Click OK to merge, Cancel to replace.' ) ) {
+                            this.mergeData( importedData );
+                        } else {
+                            if ( !importedData.trash ) {
+                                importedData.trash = this.data.trash;
+                            }
+                            this.data = importedData;
+                        }
+
+                        this.saveData();
+                        this.render();
+                        alert( 'Import successful!' );
+                    } catch ( error ) {
+                        alert( 'Error importing data: ' + error.message );
+                    }
+                };
+
+                reader.readAsText( file );
+            };
+
+            input.click();
+        }
+
+        parseOneTabFormat ( text ) {
+            const groups = text.split( /\n\s*\n/ ).filter( group => group.trim() );
+            const result = {
+                tabs: [],
+                trash: []
+            };
+
+            groups.forEach( ( group, groupIndex ) => {
+                const lines = group.split( '\n' ).filter( line => line.trim() );
+                if ( lines.length === 0 ) return;
+
+                let containerName = `Imported Group ${ groupIndex + 1 }`;
+                let startIndex = 0;
+
+                if ( lines[ 0 ].includes( '|' ) || lines[ 0 ].includes( ':' ) ) {
+                    const titleLine = lines[ 0 ];
+                    const separator = titleLine.includes( '|' ) ? '|' : ':';
+                    containerName = titleLine.split( separator )[ 0 ].trim();
+                    startIndex = 1;
+                }
+
+                const container = {
+                    id: 'container-' + Date.now() + '-' + groupIndex,
+                    name: containerName,
+                    links: []
+                };
+
+                for ( let i = startIndex; i < lines.length; i++ ) {
+                    const line = lines[ i ].trim();
+                    if ( !line ) continue;
+
+                    let url, title;
+
+                    if ( line.includes( '|' ) ) {
+                        [ url, title ] = line.split( '|' ).map( s => s.trim() );
+                    } else if ( line.includes( ' ' ) ) {
+                        const spaceIndex = line.indexOf( ' ' );
+                        url = line.substring( 0, spaceIndex );
+                        title = line.substring( spaceIndex + 1 ).trim();
+                    } else {
+                        url = line;
+                        title = this.extractTitleFromUrl( url );
+                    }
+
+                    if ( this.isValidUrl( url ) ) {
+                        container.links.push( {
+                            id: 'link-' + Date.now() + '-' + groupIndex + '-' + i,
+                            url: url,
+                            title: title || url
+                        } );
+                    }
+                }
+
+                if ( container.links.length > 0 ) {
+                    if ( result.tabs.length === 0 ) {
+                        result.tabs.push( {
+                            id: 'tab-' + Date.now(),
+                            name: 'OneTab Import',
+                            containers: [ container ]
+                        } );
+                    } else {
+                        result.tabs[ 0 ].containers.push( container );
+                    }
+                }
+            } );
+
+            return result;
+        }
+
+        isValidDataStructure ( data ) {
+            if ( !data.tabs || !Array.isArray( data.tabs ) ) return false;
+            if ( !data.trash || !Array.isArray( data.trash ) ) return false;
+
+            for ( const tab of data.tabs ) {
+                if ( !tab.id || !tab.name || !Array.isArray( tab.containers ) ) return false;
+
+                for ( const container of tab.containers ) {
+                    if ( !container.id || !container.name || !Array.isArray( container.links ) ) return false;
+
+                    for ( const link of container.links ) {
+                        if ( !link.id || !link.title || !link.url ) return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        mergeData ( importedData ) {
+            const existingTrashIds = new Set( this.data.trash.map( item => item.id ) );
+            for ( const trashItem of importedData.trash ) {
+                if ( !existingTrashIds.has( trashItem.id ) ) {
+                    this.data.trash.push( trashItem );
+                }
+            }
+
+            const existingTabIds = new Set( this.data.tabs.map( tab => tab.id ) );
+            for ( const importedTab of importedData.tabs ) {
+                if ( !existingTabIds.has( importedTab.id ) ) {
+                    this.data.tabs.push( importedTab );
+                } else {
+                    const existingTab = this.data.tabs.find( tab => tab.id === importedTab.id );
+                    this.mergeContainers( existingTab, importedTab );
+                }
+            }
+        }
+
+        mergeContainers ( existingTab, importedTab ) {
+            const existingContainerIds = new Set( existingTab.containers.map( c => c.id ) );
+
+            for ( const importedContainer of importedTab.containers ) {
+                if ( !existingContainerIds.has( importedContainer.id ) ) {
+                    existingTab.containers.push( importedContainer );
+                } else {
+                    const existingContainer = existingTab.containers.find( c => c.id === importedContainer.id );
+                    const existingLinkIds = new Set( existingContainer.links.map( l => l.id ) );
+
+                    for ( const importedLink of importedContainer.links ) {
+                        if ( !existingLinkIds.has( importedLink.id ) ) {
+                            existingContainer.links.push( importedLink );
+                        }
+                    }
+                }
+            }
+        }
+
+        extractTitleFromUrl ( url ) {
+            try {
+                const urlObj = new URL( url );
+                let title = urlObj.hostname.replace( 'www.', '' )
+                    .split( '.' )[ 0 ]
+                    .replace( /-/g, ' ' );
+                return title.replace( /\b\w/g, l => l.toUpperCase() );
+            } catch {
+                return url;
+            }
+        }
+
+        isValidUrl ( string ) {
+            try {
+                new URL( string );
+                return true;
+            } catch {
+                return false;
             }
         }
     }
