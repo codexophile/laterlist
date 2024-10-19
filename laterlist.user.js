@@ -309,7 +309,12 @@
     `;
 
     class ReadLaterApp {
+
         constructor () {
+
+            this.isFaviconView = false; // Start in detailed view mode
+            this.data = GM_getValue( 'readLaterData', DEFAULT_DATA );
+
             this.data = GM_getValue( 'readLaterData', DEFAULT_DATA );
             // Initialize trash if it doesn't exist in saved data
             if ( !this.data.trash ) {
@@ -324,6 +329,12 @@
             }
             this.init();
         }
+
+        toggleView () {
+            this.isFaviconView = !this.isFaviconView;
+            this.render();
+        }
+
 
         initContextMenu () {
             document.addEventListener( 'contextmenu', ( e ) => {
@@ -461,6 +472,7 @@
                         <button class="btn" id="exportData">Export</button>
                         <button class="btn trash-tab" id="showTrash">Trash (${ this.data.trash.length })</button>
                         <button class="btn btn-primary" id="addTab">New Tab</button>
+                        <button class="btn" id="toggleView">${ this.isFaviconView ? 'Detailed View' : 'Favicon View' }</button>
                     </div>
                 </div>
                 <div class="tabs">
@@ -516,18 +528,27 @@
                             <button class="btn btn-delete" data-delete-container="${ container.id }">×</button>
                         </div>
                         <div class="container-content" data-container-id="${ container.id }" data-tab-id="${ tab.id }">
-                            ${ container.links.map( link => `
-                                <div class="link" data-link-id="${ link.id }">
-                                    <img src="https://www.google.com/s2/favicons?domain=${ new URL( link.url ).hostname }" 
-                                         alt="favicon" 
-                                         style="width: 16px; height: 16px; margin-right: 8px;">
-                                    <a href="${ link.url }" 
-                                       target="_blank" 
-                                       data-move-to-trash="${ link.id }" 
-                                       data-link-url="${ link.url }">${ link.title }</a>
-                                    <button class="btn btn-delete" data-delete-link="${ link.id }">×</button>
-                                </div>
-                            `).join( '' ) }
+                            ${ this.isFaviconView
+                    ? container.links.map( link => `
+                                    <div class="link" data-link-id="${ link.id }" style="display: inline-block; padding: 8px;">
+                                        <a href="${ link.url }" target="_blank">
+                                            <img src="https://www.google.com/s2/favicons?domain=${ new URL( link.url ).hostname }" 
+                                                 alt="favicon" style="width: 32px; height: 32px;">
+                                        </a>
+                                    </div>
+                                `).join( '' )
+                    : container.links.map( link => `
+                                    <div class="link" data-link-id="${ link.id }">
+                                        <img src="https://www.google.com/s2/favicons?domain=${ new URL( link.url ).hostname }" 
+                                             alt="favicon" style="width: 16px; height: 16px; margin-right: 8px;">
+                                        <a href="${ link.url }" 
+                                           target="_blank" 
+                                           data-move-to-trash="${ link.id }" 
+                                           data-link-url="${ link.url }">${ link.title }</a>
+                                        <button class="btn btn-delete" data-delete-link="${ link.id }">×</button>
+                                    </div>
+                                `).join( '' )
+                }
                         </div>
                     </div>
                 `).join( '' ) }
@@ -536,6 +557,7 @@
         </div>
     `).join( '' );
         }
+
 
 
         getTemplate () {
@@ -581,6 +603,8 @@
         }
 
         attachEventListeners () {
+
+            document.getElementById( 'toggleView' )?.addEventListener( 'click', () => this.toggleView() );
 
             document.getElementById( 'importData' )?.addEventListener( 'click', () => this.importData() );
             document.getElementById( 'exportData' )?.addEventListener( 'click', () => this.exportData() );
