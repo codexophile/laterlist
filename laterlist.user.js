@@ -680,6 +680,17 @@
                     this.renameContainer( containerId );
                 } );
             } );
+
+            // Tab double-click for renaming
+            document.querySelectorAll( '.tab' ).forEach( tab => {
+                tab.addEventListener( 'dblclick', ( e ) => {
+                    const tabId = tab.dataset.tabId;
+                    if ( tabId ) {
+                        this.renameTab( tabId );
+                    }
+                } );
+            } );
+
         }
 
         moveToTrash ( linkId ) {
@@ -843,6 +854,19 @@
             this.saveData();
             this.render();
         }
+
+        renameTab ( tabId ) {
+            const tab = this.data.tabs.find( t => t.id === tabId );
+            if ( !tab ) return;
+
+            const newName = prompt( 'Enter new tab name:', tab.name );
+            if ( newName && newName.trim() !== '' ) {
+                tab.name = newName.trim();
+                this.saveData();  // Save the updated data
+                this.render();    // Re-render the app to reflect the change
+            }
+        }
+
 
         deleteLink ( linkId ) {
             const currentTab = this.getCurrentTab();
