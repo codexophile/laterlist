@@ -457,6 +457,8 @@
                 <div class="header">
                     <h1>Read Later</h1>
                     <div>
+                        <button class="btn" id="importData">Import</button>
+                        <button class="btn" id="exportData">Export</button>
                         <button class="btn trash-tab" id="showTrash">Trash (${ this.data.trash.length })</button>
                         <button class="btn btn-primary" id="addTab">New Tab</button>
                     </div>
@@ -577,6 +579,9 @@
         }
 
         attachEventListeners () {
+
+            document.getElementById( 'importData' )?.addEventListener( 'click', () => this.importData() );
+            document.getElementById( 'exportData' )?.addEventListener( 'click', () => this.exportData() );
 
             document.addEventListener( 'click', ( e ) => {
 
@@ -817,6 +822,127 @@
             } );
             this.saveData();
             this.render();
+        }
+
+        exportData () {
+            const dataStr = JSON.stringify( this.data, null, 2 );
+            const blob = new Blob( [ dataStr ], { type: 'application/json' } );
+            const url = URL.createObjectURL( blob );
+
+            const a = document.createElement( 'a' );
+            a.href = url;
+            a.download = `read-later-backup-${ new Date().toISOString().split( 'T' )[ 0 ] }.json`;
+            document.body.appendChild( a );
+            a.click();
+            document.body.removeChild( a );
+            URL.revokeObjectURL( url );
+        }
+
+        importData () {
+            const input = document.createElement( 'input' );
+            input.type = 'file';
+            input.accept = 'application/json';
+
+            input.onchange = e => {
+                const file = e.target.files[ 0 ];
+                const reader = new FileReader();
+
+                reader.onload = event => {
+                    try {
+                        const importedData = JSON.parse( event.target.result );
+
+                        // Validate imported data structure
+                        if ( !this.isValidDataStructure( importedData ) ) {
+                            alert( 'Invalid data structure in imported file' );
+                            return;
+                        }
+
+                        // Merge or replace data
+                        if ( confirm( 'Do you want to merge with existing data? Click OK to merge, Cancel to replace.' ) ) {
+                            this.mergeData( importedData );
+                        } else {
+                            this.data = importedData;
+                        }
+
+                        this.saveData();
+                        this.render();
+                        alert( 'Import successful!' );
+                    } catch ( error ) {
+                        alert( 'Error importing data: ' + error.message );
+                    }
+                };
+
+                reader.readAsText( file );
+            };
+
+            input.click();
+        }
+
+        isValidDataStructure ( data ) {
+            // Basic structure validation
+            if ( !data.tabs || !Array.isArray( data.tabs ) ) return false;
+            if ( !data.trash || !Array.isArray( data.trash ) ) return false;
+
+            // Validate each tab
+            for ( const tab of data.tabs ) {
+                if ( !tab.id || !tab.name || !Array.isArray( tab.containers ) ) return false;
+
+                // Validate containers
+                for ( const container of tab.containers ) {
+                    if ( !container.id || !container.name || !Array.isArray( container.links ) ) return false;
+
+                    // Validate links
+                    for ( const link of container.links ) {
+                        if ( !link.id || !link.title || !link.url ) return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        mergeData ( importedData ) {
+            // Merge trash items
+            const existingTrashIds = new Set( this.data.trash.map( item => item.id ) );
+            for ( const trashItem of importedData.trash ) {
+                if ( !existingTrashIds.has( trashItem.id ) ) {
+                    this.data.trash.push( trashItem );
+                }
+            }
+
+            // Merge tabs
+            const existingTabIds = new Set( this.data.tabs.map( tab => tab.id ) );
+            for ( const importedTab of importedData.tabs ) {
+                if ( !existingTabIds.has( importedTab.id ) ) {
+                    // New tab - add it entirely
+                    this.data.tabs.push( importedTab );
+                } else {
+                    // Existing tab - merge containers
+                    const existingTab = this.data.tabs.find( tab => tab.id === importedTab.id );
+                    this.mergeContainers( existingTab, importedTab );
+                }
+            }
+        }
+
+        mergeContainers ( existingTab, importedTab ) {
+            const existingContainerIds = new Set( existingTab.containers.map( c => c.id ) );
+
+            for ( const importedContainer of importedTab.containers ) {
+                if ( !existingContainerIds.has( importedContainer.id ) ) {
+                    // New container - add it entirely
+                    existingTab.containers.push( importedContainer );
+                } else {
+                    // Existing container - merge links
+                    const existingContainer = existingTab.containers.find( c => c.id === importedContainer.id );
+                    const existingLinkIds = new Set( existingContainer.links.map( l => l.id ) );
+
+                    for ( const importedLink of importedContainer.links ) {
+                        if ( !existingLinkIds.has( importedLink.id ) ) {
+                            existingContainer.links.push( importedLink );
+                        }
+                    }
+                }
+            }
         }
     }
 
