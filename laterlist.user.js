@@ -348,9 +348,18 @@
             this.init();
         }
 
+        // Modify the toggleView method to preserve link state
         toggleView () {
             this.isFaviconView = !this.isFaviconView;
+
+            // Save current state before toggling
+            this.saveData();
+
+            // Re-render with preserved state
             this.render();
+
+            // Re-initialize sortable after view change
+            this.initSortable();
         }
 
 
@@ -791,6 +800,7 @@
             } );
         }
 
+        // Modify the handleLinkMove method to ensure link data persistence
         handleLinkMove ( evt ) {
             const linkEl = evt.item;
             const linkId = linkEl.dataset.linkId;
@@ -822,40 +832,33 @@
                 return;
             }
 
-            // Get the actual positions in the DOM
-            const fromLinks = Array.from( evt.from.children );
-            const toLinks = Array.from( evt.to.children );
-
-            // Create a new array representing the desired order
-            const updatedFromLinks = fromContainer.links.filter( link => link.id !== linkId );
-            const movedLink = fromContainer.links.find( link => link.id === linkId );
-
-            if ( !movedLink ) {
+            // Find the actual link object
+            const linkIndex = fromContainer.links.findIndex( link => link.id === linkId );
+            if ( linkIndex === -1 ) {
                 console.error( 'Could not find moved link' );
                 return;
             }
 
-            // Update the source container
-            fromContainer.links = updatedFromLinks;
+            // Create a deep copy of the link object
+            const movedLink = JSON.parse( JSON.stringify( fromContainer.links[ linkIndex ] ) );
 
-            // Update the target container
+            // Remove from source
+            fromContainer.links.splice( linkIndex, 1 );
+
+            // Add to target at the correct position
             if ( fromContainerId === toContainerId && fromTabId === toTabId ) {
-                // If moving within the same container, splice the link at the new index
                 toContainer.links.splice( evt.newIndex, 0, movedLink );
             } else {
-                // If moving to a different container, add to the target container
                 const newLinks = [ ...toContainer.links ];
                 newLinks.splice( evt.newIndex, 0, movedLink );
                 toContainer.links = newLinks;
             }
 
-            // Save and update the view
             this.saveData();
 
             // Only re-render if moving between tabs
             if ( fromTabId !== toTabId ) {
                 this.render();
-                this.initSortable();
             }
         }
 
@@ -987,10 +990,11 @@
             input.click();
         }
 
+        // Modify the importFromOneTab method to ensure proper link IDs
         importFromOneTab () {
             const input = document.createElement( 'input' );
             input.type = 'file';
-            input.accept = 'text/plain'; // OneTab exports as text (or HTML)
+            input.accept = 'text/plain';
 
             input.onchange = ( e ) => {
                 const file = e.target.files[ 0 ];
@@ -1001,7 +1005,6 @@
                     const links = this.parseOneTabExport( textContent );
 
                     if ( links.length > 0 ) {
-                        // Add the imported links to the first container of the first tab
                         const firstTab = this.data.tabs[ 0 ];
                         if ( firstTab.containers.length === 0 ) {
                             firstTab.containers.push( {
@@ -1011,8 +1014,15 @@
                             } );
                         }
                         const firstContainer = firstTab.containers[ 0 ];
-                        firstContainer.links.push( ...links );
 
+                        // Ensure each link has a unique timestamp-based ID
+                        const processedLinks = links.map( link => ( {
+                            ...link,
+                            id: `link-${ Date.now() }-${ Math.random().toString( 36 ).substr( 2, 9 ) }`,
+                            importedAt: Date.now()
+                        } ) );
+
+                        firstContainer.links.push( ...processedLinks );
                         this.saveData();
                         this.render();
                         alert( `${ links.length } links imported successfully from OneTab!` );
@@ -1027,18 +1037,33 @@
             input.click();
         }
 
+        // Modify the parseOneTabExport method to handle URLs more robustly
         parseOneTabExport ( content ) {
             const links = [];
-
-            // Split by lines and process each line
             const lines = content.split( '\n' ).filter( line => line.trim() !== '' );
 
             lines.forEach( line => {
-                const urlMatch = line.match( /(https?:\/\/[^\s]+)/ ); // Simple regex to find URLs
+                // More robust URL extraction
+                const urlMatch = line.match( /https?:\/\/[^\s|\|]+/ );
                 if ( urlMatch ) {
                     const url = urlMatch[ 0 ];
-                    const title = line.replace( url, '' ).trim() || url; // Use the URL as title if not found
-                    links.push( { id: 'link-' + Date.now(), title, url } );
+                    // Clean up the title: remove the URL and any remaining pipe characters
+                    let title = line.replace( url, '' ).replace( /\|/g, '' ).trim();
+                    if ( !title ) {
+                        // If no title is found, use the domain name as title
+                        try {
+                            const domain = new URL( url ).hostname;
+                            title = domain.replace( /^www\./, '' );
+                        } catch ( e ) {
+                            title = url;
+                        }
+                    }
+                    links.push( {
+                        id: `link-${ Date.now() }-${ Math.random().toString( 36 ).substr( 2, 9 ) }`,
+                        title,
+                        url,
+                        importedAt: Date.now()
+                    } );
                 }
             } );
 
