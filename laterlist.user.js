@@ -463,7 +463,13 @@
 
             // Update container select based on selected tab
             const updateContainers = () => {
-                containerSelect.innerHTML = '';
+
+                const escapeHTMLPolicy = trustedTypes.createPolicy( "forceInner", {
+                    createHTML: ( to_escape ) => to_escape
+                } );
+
+                containerSelect.innerHTML = escapeHTMLPolicy.createHTML( '' );
+
                 const selectedTab = this.data.tabs.find( tab => tab.id === tabSelect.value );
                 selectedTab.containers.forEach( container => {
                     const option = document.createElement( 'option' );
