@@ -55,6 +55,8 @@
     // Styles
     const styles = `
 
+        * { user-select: none;}
+
     .sortable-fallback {
     opacity: 0.8;
     transform: scale(1.05);
@@ -545,7 +547,8 @@
         renderTabs () {
             return this.data.tabs.map( tab => `
         <div class="tab-section" data-tab-section="${ tab.id }">
-            <div class="tab-label">${ tab.name } (${ tab.containers.reduce( ( acc, container ) => acc + container.links.length, 0 ) } links)</div>
+            <!-- Update the total number of links here -->
+            <div class="tab-label">${ tab.name } (${ this.getTotalLinksInTab( tab ) } links)</div>
             <div class="containers ${ tab.id === this.activeTab ? 'active-tab' : '' }" 
                  data-tab-content="${ tab.id }" 
                  style="display: ${ tab.id === this.activeTab ? 'grid' : 'none' }">
@@ -588,6 +591,9 @@
     `).join( '' );
         }
 
+        getTotalLinksInTab ( tab ) {
+            return tab.containers.reduce( ( total, container ) => total + container.links.length, 0 );
+        }
 
 
         getTemplate () {
@@ -991,7 +997,6 @@
             input.click();
         }
 
-        // Modify the importFromOneTab method to ensure proper link IDs
         importFromOneTab () {
             const input = document.createElement( 'input' );
             input.type = 'file';
@@ -1038,7 +1043,6 @@
             input.click();
         }
 
-        // Modify the parseOneTabExport method to handle URLs more robustly
         parseOneTabExport ( content ) {
             const links = [];
             const lines = content.split( '\n' ).filter( line => line.trim() !== '' );
