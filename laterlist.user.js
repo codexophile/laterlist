@@ -514,7 +514,6 @@
             this.render();
         }
 
-
         saveLink ( url, title, tabId, containerId ) {
             const tab = this.data.tabs.find( t => t.id === tabId );
             const container = tab.containers.find( c => c.id === containerId );
@@ -818,6 +817,35 @@
                 newLink.style.cssText = 'user-drag: none; -webkit-user-drag: none; user-select: none; -webkit-user-select: none;';
             } );
 
+            // Handle delete buttons with a more specific approach
+            document.querySelectorAll( '.link .btn-delete' ).forEach( button => {
+                const link = button.closest( '.link' );
+
+                // Remove existing listeners
+                const newButton = button.cloneNode( true );
+                button.parentNode.replaceChild( newButton, button );
+
+                newButton.addEventListener( 'pointerdown', ( e ) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    const deleteLink = newButton.dataset.deleteLink;
+                    if ( deleteLink ) {
+                        this.moveToTrash( deleteLink );
+                    }
+                }, { capture: true } );
+
+                // Make sure the button and its parent link don't trigger sortable
+                newButton.draggable = false;
+                if ( link ) {
+                    link.addEventListener( 'pointerdown', ( e ) => {
+                        if ( e.target.classList.contains( 'btn-delete' ) ) {
+                            e.stopPropagation();
+                        }
+                    }, { capture: true } );
+                }
+            } );
+
         }
 
         moveToTrash ( linkId ) {
@@ -870,6 +898,8 @@
         initSortable () {
             document.querySelectorAll( '.container-content' ).forEach( container => {
                 new Sortable( container, {
+                    filter: '.btn-delete', // Add this to prevent dragging from delete buttons
+                    preventOnFilter: true,  // Add this to prevent default action when clicking filtered elements
                     group: 'links',
                     animation: 150,
                     ghostClass: 'sortable-ghost',
