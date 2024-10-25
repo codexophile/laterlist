@@ -565,7 +565,8 @@
                 <div class="tabs">
                     ${ this.data.tabs.map( tab => `
                         <div class="tab ${ tab.id === this.activeTab ? 'active' : '' }" data-tab-id="${ tab.id }">
-                            <span>${ tab.name }</span>
+                            <span> ${ tab.name } </span>
+                            <span class=link-count> ${ this.getTotalLinksInTab( tab ) } links</span>
                             ${ this.data.tabs.length > 1 ? `
                                 <button class="btn btn-delete" data-delete-tab="${ tab.id }">×</button>
                             ` : '' }
