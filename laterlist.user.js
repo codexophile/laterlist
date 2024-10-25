@@ -57,6 +57,52 @@
 
         * { user-select: none;}
 
+    .header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.total-links {
+    color: var(--text-secondary);
+    font-size: 0.9em;
+    padding: 4px 8px;
+    background: var(--bg-secondary);
+    border-radius: 4px;
+}
+
+.tab {
+    position: relative;
+}
+
+.tab-count {
+    font-size: 0.8em;
+    opacity: 0.8;
+    margin-left: 8px;
+}
+
+.container-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    border-bottom: 1px solid var(--border);
+}
+
+.container-stats {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.link-count {
+    font-size: 0.8em;
+    color: var(--text-secondary);
+    padding: 2px 6px;
+    background: var(--bg-primary);
+    border-radius: 4px;
+}
+
     .sortable-fallback {
     opacity: 0.8;
     transform: scale(1.05);
@@ -350,6 +396,13 @@
             this.init();
         }
 
+        getTotalLinks () {
+            const tabLinks = this.data.tabs.reduce( ( total, tab ) =>
+                total + tab.containers.reduce( ( containerTotal, container ) =>
+                    containerTotal + container.links.length, 0 ), 0 );
+            return tabLinks + this.data.trash.length;
+        }
+
         // Modify the toggleView method to preserve link state
         toggleView () {
             this.isFaviconView = !this.isFaviconView;
@@ -496,10 +549,13 @@
             const app = document.getElementById( 'app' );
             app.innerHTML = `
                 <div class="header">
-                    <h1>Read Later</h1>
+                    <div class="header-left">
+                        <h1>Read Later</h1>
+                        <span class="total-links">Total Links: ${ this.getTotalLinks() }</span>
+                    </div>
                     <div>
                         <button class="btn" id="importData">Import</button>
-                        <button class="btn" id="importFromOneTab">Import from OneTab</button> <!-- New Button -->
+                        <button class="btn" id="importFromOneTab">Import from OneTab</button>
                         <button class="btn" id="exportData">Export</button>
                         <button class="btn trash-tab" id="showTrash">Trash (${ this.data.trash.length })</button>
                         <button class="btn btn-primary" id="addTab">New Tab</button>
@@ -556,9 +612,10 @@
                 ${ tab.containers.map( container => `
                     <div class="container">
                         <div class="container-header">
-                            <span class="container-name" data-container-id="${ container.id }">
-                                ${ container.name } (${ container.links.length } links)
-                            </span>
+                            <div class="container-stats">
+                                <span class="container-name" data-container-id="${ container.id }">${ container.name }</span>
+                                <span class="link-count">${ container.links.length } links</span>
+                            </div>
                             <button class="btn btn-delete" data-delete-container="${ container.id }">×</button>
                         </div>
                         <div class="container-content" data-container-id="${ container.id }" data-tab-id="${ tab.id }">
@@ -606,6 +663,7 @@
                     ${ this.data.tabs.map( tab => `
                         <div class="tab ${ tab.id === this.activeTab ? 'active' : '' }" data-tab-id="${ tab.id }">
                             <span>${ tab.name }</span>
+                            <span class="tab-count">${ this.getTotalLinksInTab( tab ) }</span>
                             ${ this.data.tabs.length > 1 ? `
                                 <button class="btn btn-delete" data-delete-tab="${ tab.id }">×</button>
                             ` : '' }
