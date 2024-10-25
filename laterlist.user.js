@@ -783,6 +783,41 @@
                 if ( restoreLink ) this.restoreFromTrash( restoreLink );
                 if ( permanentDelete ) this.permanentDelete( permanentDelete );
             } );
+
+            // Handle links that should be moved to trash
+            document.querySelectorAll( 'a[data-move-to-trash]' ).forEach( link => {
+                // Remove any existing event listeners
+                const newLink = link.cloneNode( true );
+                link.parentNode.replaceChild( newLink, link );
+
+                // Prevent all default behaviors
+                newLink.addEventListener( 'pointerdown', ( e ) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    const moveToTrash = e.currentTarget.dataset.moveToTrash;
+                    const linkUrl = e.currentTarget.dataset.linkUrl;
+
+                    // Move to trash first
+                    this.moveToTrash( moveToTrash );
+
+                    // Open in new tab
+                    window.open( linkUrl, '_blank' );
+                }, { capture: true } );
+
+                // Prevent all other events that might interfere
+                [ 'click', 'dragstart', 'drag', 'mousedown' ].forEach( eventType => {
+                    newLink.addEventListener( eventType, ( e ) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }, { capture: true } );
+                } );
+
+                // Disable all drag-related properties
+                newLink.draggable = false;
+                newLink.style.cssText = 'user-drag: none; -webkit-user-drag: none; user-select: none; -webkit-user-select: none;';
+            } );
+
         }
 
         moveToTrash ( linkId ) {
