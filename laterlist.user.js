@@ -804,6 +804,9 @@
 
                 // Prevent all default behaviors
                 newLink.addEventListener( 'pointerdown', ( e ) => {
+
+                    if ( e.which === 2 ) return;
+
                     e.preventDefault();
                     e.stopPropagation();
 
@@ -1004,7 +1007,6 @@
             // Re-render the UI to update link counts
             this.render();
         }
-
 
         addTab () {
             const name = prompt( 'Enter tab name:' );
