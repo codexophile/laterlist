@@ -26,7 +26,7 @@ Develop a browser userscript called "Later-List" using JavaScript. This script w
 
 -   trash functionality. each link displayed in the main interface has a button to send the link to trash.
 
--   when the user clicks on a link, the link should automatically be opened and sent to the archive container.
+-   when the user clicks on a link, the link should automatically be opened in a new tab and the link should be sent to the archive container.
 
 -   From either the archive container or the trash container, the user is able to restore links to their original container
 
