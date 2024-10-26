@@ -421,10 +421,17 @@
         initContextMenu () {
             document.addEventListener( 'contextmenu', ( e ) => {
                 if ( !e.ctrlKey ) return;
-                const targetAnchor = e.target.closest( 'a' );
-                if ( !targetAnchor ) return;
+
                 e.preventDefault();
-                this.showPopup( e, targetAnchor.href, targetAnchor.textContent.trim() );
+
+                // Check if clicked on or near a link
+                const targetAnchor = e.target.closest( 'a' );
+
+                // Use link URL if clicking on a link, otherwise use current page URL
+                const url = targetAnchor ? targetAnchor.href : window.location.href;
+                const title = targetAnchor ? targetAnchor.textContent.trim() : document.title;
+
+                this.showPopup( e, url, title );
             } );
         }
 
@@ -463,7 +470,6 @@
 
             // Update container select based on selected tab
             const updateContainers = () => {
-
                 const escapeHTMLPolicy = trustedTypes.createPolicy( "forceInner", {
                     createHTML: ( to_escape ) => to_escape
                 } );
@@ -484,6 +490,7 @@
 
             saveButton.textContent = 'Save Link';
             saveButton.addEventListener( 'click', () => {
+                addHistoryEntry( url );
                 this.saveLink( url, title, tabSelect.value, containerSelect.value );
                 popup.remove();
             } );
