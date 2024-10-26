@@ -805,7 +805,7 @@
                 // Prevent all default behaviors
                 newLink.addEventListener( 'pointerdown', ( e ) => {
 
-                    if ( e.which === 2 ) return;
+                    if ( e.which === 2 ) return; // middle mouse action
 
                     e.preventDefault();
                     e.stopPropagation();
