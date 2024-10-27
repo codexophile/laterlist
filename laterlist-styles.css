@@ -310,8 +310,13 @@ body {
 }
 
 .btn-delete {
+    display: none;
     padding: 4px 8px;
     color: #ff4444;
+}
+
+:is(.tab, .container-header, .link):hover .btn-delete {
+    display: block;
 }
 
 .btn-primary {
