@@ -277,6 +277,7 @@ body {
 }
 
 .link {
+    position: relative;
     padding: 8px 12px;
     margin-bottom: 8px;
     background: var(--bg-primary);
@@ -313,6 +314,9 @@ body {
 }
 
 .btn-delete {
+    position: absolute;
+    right: 0px;
+    margin: 4px;
     visibility: hidden;
     padding: 4px 8px;
     color: #ff4444;
