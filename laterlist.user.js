@@ -145,6 +145,7 @@
                 option.textContent = tab.name;
                 tabSelect.appendChild( option );
             } );
+            tabSelect.size = this.data.tabs.length;
 
             // Update container select based on selected tab
             const updateContainers = () => {
@@ -161,6 +162,7 @@
                     option.textContent = container.name;
                     containerSelect.appendChild( option );
                 } );
+                containerSelect.size = selectedTab.containers.length;
             };
 
             tabSelect.addEventListener( 'change', updateContainers );
