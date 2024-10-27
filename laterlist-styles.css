@@ -27,6 +27,9 @@
 }
 
 .container-header {
+    position: sticky;
+    background: var(--bg-secondary);
+    top: 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
