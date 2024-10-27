@@ -137,6 +137,7 @@
             const tabSelect = document.createElement( 'select' );
             const containerSelect = document.createElement( 'select' );
             const saveButton = document.createElement( 'button' );
+            const saveAndCloseBtn = generateElements( '<button>💾❌</button>' );
 
             // Populate tab select
             this.data.tabs.forEach( tab => {
@@ -168,16 +169,23 @@
             tabSelect.addEventListener( 'change', updateContainers );
             updateContainers();
 
-            saveButton.textContent = 'Save Link';
+            saveButton.textContent = '💾';
             saveButton.addEventListener( 'click', () => {
                 addHistoryEntry( url );
                 this.saveLink( url, title, tabSelect.value, containerSelect.value );
                 popup.remove();
             } );
+            saveAndCloseBtn.addEventListener( 'click', () => {
+                addHistoryEntry( url );
+                this.saveLink( url, title, tabSelect.value, containerSelect.value );
+                popup.remove();
+                window.close();
+            } );
 
             popup.appendChild( tabSelect );
             popup.appendChild( containerSelect );
             popup.appendChild( saveButton );
+            popup.appendChild( saveAndCloseBtn );
 
             document.body.appendChild( popup );
             console.log( popup );
