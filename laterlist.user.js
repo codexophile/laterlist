@@ -201,18 +201,14 @@
 
         deleteContainer ( containerId ) {
             const currentTab = this.getCurrentTab();
-            const container = currentTab.containers.find( c => c.id === containerId );
-
-            // Move all links to trash
-            if ( container && container.links ) {
-                this.data.trash.push( ...container.links );
+            const containerIndex = currentTab.containers.findIndex( c => c.id === containerId );
+            if ( containerIndex !== -1 ) {
+                // Move all links from the container to the trash
+                this.data.trash.push( ...currentTab.containers[ containerIndex ].links );
+                currentTab.containers.splice( containerIndex, 1 );
+                this.saveData();
+                this.render();
             }
-
-            // Remove the container
-            currentTab.containers = currentTab.containers.filter( c => c.id !== containerId );
-
-            this.saveData();
-            this.render();
         }
 
         saveLink ( url, title, tabId, containerId ) {
@@ -416,6 +412,7 @@
                 btn.addEventListener( 'click', ( e ) => {
                     e.preventDefault();
                     e.stopPropagation();
+                    console.log( 'Add Container Button Clicked for Tab:', tabId );
                     this.addContainer( tabId );
                 }, { once: true } ); // This ensures the listener only fires once
             } );
@@ -548,7 +545,7 @@
                 }
             } );
 
-            // Add rename button event listeners
+            // Add rename container button event listeners
             document.querySelectorAll( '.btn-rename' ).forEach( button => {
                 button.addEventListener( 'click', ( e ) => {
                     e.preventDefault();
@@ -558,22 +555,24 @@
                 } );
             } );
 
+            // Add delete container button event listeners
+            document.querySelectorAll( '.btn-delete[data-delete-container]' ).forEach( button => {
+                button.addEventListener( 'click', ( e ) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const containerId = button.dataset.deleteContainer;
+                    this.deleteContainer( containerId );
+                } );
+            } );
+
             // Remove existing event listeners on buttons in container headers
             document.querySelectorAll( '.container-header .btn' ).forEach( button => {
                 button.replaceWith( button.cloneNode( true ) );
             } );
 
-            // Add event listeners to buttons in container headers to prevent drag behavior
-            document.querySelectorAll( '.container-header .btn' ).forEach( button => {
-                button.addEventListener( 'mousedown', ( e ) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                } );
-                button.addEventListener( 'click', ( e ) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                } );
-            } );
+            // Debugging: Log all rename and delete container buttons found
+            console.log( 'Rename Container Buttons:', document.querySelectorAll( '.btn-rename' ) );
+            console.log( 'Delete Container Buttons:', document.querySelectorAll( '.btn-delete[data-delete-container]' ) );
         }
 
         moveToTrash ( linkId ) {
