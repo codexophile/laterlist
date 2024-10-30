@@ -491,7 +491,6 @@
 
                 // Prevent all default behaviors
                 newLink.addEventListener( 'pointerdown', ( e ) => {
-
                     if ( e.button !== 0 ) return; // left button action
 
                     e.preventDefault();
@@ -556,6 +555,23 @@
                     e.stopPropagation();
                     const containerId = button.dataset.renameContainer;
                     this.renameContainer( containerId );
+                } );
+            } );
+
+            // Remove existing event listeners on buttons in container headers
+            document.querySelectorAll( '.container-header .btn' ).forEach( button => {
+                button.replaceWith( button.cloneNode( true ) );
+            } );
+
+            // Add event listeners to buttons in container headers to prevent drag behavior
+            document.querySelectorAll( '.container-header .btn' ).forEach( button => {
+                button.addEventListener( 'mousedown', ( e ) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                } );
+                button.addEventListener( 'click', ( e ) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                 } );
             } );
         }
@@ -653,6 +669,8 @@
                     dragClass: 'sortable-drag',
                     forceFallback: true,
                     fallbackClass: 'sortable-fallback',
+                    filter: '.btn',  // Ignore buttons
+                    preventOnFilter: true,
                     onStart: ( evt ) => {
                         document.body.classList.add( 'dragging-active' );
                         this.isDragging = true;
@@ -676,6 +694,7 @@
                         }
                     }
                 } );
+
             } );
         }
 
