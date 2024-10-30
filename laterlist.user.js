@@ -237,42 +237,48 @@
 
         saveData () {
             GM_setValue( 'readLaterData', this.data );
+            // Debugging: Log the saved data
+            console.log( 'Data saved:', this.data );
         }
 
         render () {
             const app = document.getElementById( 'app' );
             app.innerHTML = `
-                <div class="header">
-                    <div class="header-left">
-                        <h1>Read Later</h1>
-                        <span class="total-links">Total Links: ${ this.getTotalLinks() }</span>
-                    </div>
-                    <div>
-                        <button class="btn" id="importData">Import</button>
-                        <button class="btn" id="importFromOneTab">Import from OneTab</button>
-                        <button class="btn" id="exportData">Export</button>
-                        <button class="btn trash-tab" id="showTrash">Trash (${ this.data.trash.length })</button>
-                        <button class="btn btn-primary" id="addTab">New Tab</button>
-                        <button class="btn" id="toggleView">${ this.isFaviconView ? 'Detailed View' : 'Favicon View' }</button>
-                    </div>
+            <div class="header">
+                <div class="header-left">
+                    <h1>Read Later</h1>
+                    <span class="total-links">Total Links: ${ this.getTotalLinks() }</span>
                 </div>
-                <div class="tabs">
-                    ${ this.data.tabs.map( tab => `
-                        <div class="tab ${ tab.id === this.activeTab ? 'active' : '' }" data-tab-id="${ tab.id }">
-                            <span> ${ tab.name } </span>
-                            <span class=link-count> ${ this.getTotalLinksInTab( tab ) } links</span>
-                            ${ this.data.tabs.length > 1 ? `
-                                <button class="btn btn-delete" data-delete-tab="${ tab.id }">×</button>
-                            ` : '' }
-                        </div>
-                    `).join( '' ) }
+                <div>
+                    <button class="btn" id="importData">Import</button>
+                    <button class="btn" id="importFromOneTab">Import from OneTab</button>
+                    <button class="btn" id="exportData">Export</button>
+                    <button class="btn trash-tab" id="showTrash">Trash (${ this.data.trash.length })</button>
+                    <button class="btn btn-primary" id="addTab">New Tab</button>
+                    <button class="btn" id="toggleView">${ this.isFaviconView ? 'Detailed View' : 'Favicon View' }</button>
                 </div>
-                ${ this.activeTab === 'trash' ? this.renderTrash() : this.renderTabs() }
-            `;
+            </div>
+            <div class="tabs">
+                ${ this.data.tabs.map( tab => `
+                    <div class="tab ${ tab.id === this.activeTab ? 'active' : '' }" data-tab-id="${ tab.id }">
+                        <span> ${ tab.name } </span>
+                        <span class=link-count> ${ this.getTotalLinksInTab( tab ) } links</span>
+                        ${ this.data.tabs.length > 1 ? `
+                            <button class="btn btn-delete" data-delete-tab="${ tab.id }">×</button>
+                        ` : '' }
+                    </div>
+                `).join( '' ) }
+            </div>
+            ${ this.activeTab === 'trash' ? this.renderTrash() : this.renderTabs() }
+        `;
             this.attachEventListeners();
             if ( this.activeTab !== 'trash' ) {
                 this.initSortable();
+                this.initContainerSortable(); // Ensure Sortable is initialized for containers
             }
+
+            // Debugging: Log the rendered data
+            console.log( 'Rendered data:', this.data );
         }
 
         renderTrash () {
@@ -302,10 +308,11 @@
             <div class="tab-label">${ tab.name } (${ this.getTotalLinksInTab( tab ) } links)</div>
             <div class="containers ${ tab.id === this.activeTab ? 'active-tab' : '' }" 
                  data-tab-content="${ tab.id }" 
+                 data-tab-id="${ tab.id }" 
                  style="display: ${ tab.id === this.activeTab ? 'grid' : 'none' }">
                 <div class="drag-indicator"></div>
                 ${ tab.containers.map( container => `
-                    <div class="container">
+                    <div class="container" data-container-id="${ container.id }" data-tab-id="${ tab.id }">
                         <div class="container-header">
                             <div class="container-stats">
                                 <span class="container-name" data-container-id="${ container.id }">${ container.name }</span>
@@ -342,6 +349,7 @@
         </div>
     `).join( '' );
         }
+
 
         getTotalLinksInTab ( tab ) {
             return tab.containers.reduce( ( total, container ) => total + container.links.length, 0 );
@@ -726,52 +734,37 @@
         }
 
         handleContainerMove ( evt ) {
-            const containerEl = evt.item;
-            const containerId = containerEl.dataset.containerId;
             const toTabId = evt.to.dataset.tabId;
             const fromTabId = evt.from.dataset.tabId;
 
-            if ( !containerId || !toTabId || !fromTabId ) {
+            if ( !toTabId || !fromTabId ) {
                 console.error( 'Missing required data attributes' );
                 return;
             }
 
-            // Find source and target tabs
+            // Locate the source and target tabs
             const fromTab = this.data.tabs.find( tab => tab.id === fromTabId );
             const toTab = this.data.tabs.find( tab => tab.id === toTabId );
 
             if ( !fromTab || !toTab ) {
-                console.error( 'Could not find source or target tab' );
+                console.error( 'Source or target tab not found' );
                 return;
             }
 
-            // Find the actual container object
-            const containerIndex = fromTab.containers.findIndex( container => container.id === containerId );
-            if ( containerIndex === -1 ) {
-                console.error( 'Could not find moved container' );
-                return;
-            }
+            // Get the current order of containers from the DOM
+            const newOrder = Array.from( evt.to.children ).map( child => child.dataset.containerId );
 
-            // Create a deep copy of the container object
-            const movedContainer = JSON.parse( JSON.stringify( fromTab.containers[ containerIndex ] ) );
+            // Reorder containers in `toTab` according to the new DOM order
+            toTab.containers = newOrder.map( id =>
+                fromTab.containers.find( container => container.id === id )
+            ).filter( Boolean );
 
-            // Remove from source
-            fromTab.containers.splice( containerIndex, 1 );
-
-            // Add to target at the correct position
-            if ( fromTabId === toTabId ) {
-                toTab.containers.splice( evt.newIndex, 0, movedContainer );
-            } else {
-                const newContainers = [ ...toTab.containers ];
-                newContainers.splice( evt.newIndex, 0, movedContainer );
-                toTab.containers = newContainers;
-            }
-
+            // Save the data and re-render
             this.saveData();
-
-            // Re-render the UI to update container positions
             this.render();
         }
+
+
 
         addTab () {
             const name = prompt( 'Enter tab name:' );
@@ -836,7 +829,6 @@
                 this.render();    // Re-render the app to reflect the change
             }
         }
-
 
         deleteLink ( linkId ) {
             const currentTab = this.getCurrentTab();
