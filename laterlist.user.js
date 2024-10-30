@@ -232,6 +232,7 @@
         init () {
             this.render();
             this.initSortable();
+            this.initContainerSortable(); // Initialize Sortable for containers
         }
 
         saveData () {
@@ -629,6 +630,41 @@
             } );
         }
 
+        initContainerSortable () {
+            document.querySelectorAll( '.containers' ).forEach( containers => {
+                new Sortable( containers, {
+                    group: 'containers',
+                    animation: 150,
+                    ghostClass: 'sortable-ghost',
+                    dragClass: 'sortable-drag',
+                    forceFallback: true,
+                    fallbackClass: 'sortable-fallback',
+                    onStart: ( evt ) => {
+                        document.body.classList.add( 'dragging-active' );
+                        this.isDragging = true;
+                        evt.item.classList.add( 'dragging' );
+                    },
+                    onEnd: ( evt ) => {
+                        document.body.classList.remove( 'dragging-active' );
+                        this.isDragging = false;
+                        evt.item.classList.remove( 'dragging' );
+                        this.handleContainerMove( evt );
+                        document.querySelectorAll( '.containers' ).forEach( cont => {
+                            cont.classList.remove( 'drag-hover' );
+                        } );
+                    },
+                    onChange: ( evt ) => {
+                        document.querySelectorAll( '.containers' ).forEach( cont => {
+                            cont.classList.remove( 'drag-hover' );
+                        } );
+                        if ( evt.to ) {
+                            evt.to.closest( '.containers' ).classList.add( 'drag-hover' );
+                        }
+                    }
+                } );
+            } );
+        }
+
         // Modify the handleLinkMove method to ensure link data persistence
         handleLinkMove ( evt ) {
             const linkEl = evt.item;
@@ -686,6 +722,54 @@
             this.saveData();
 
             // Re-render the UI to update link counts
+            this.render();
+        }
+
+        handleContainerMove ( evt ) {
+            const containerEl = evt.item;
+            const containerId = containerEl.dataset.containerId;
+            const toTabId = evt.to.dataset.tabId;
+            const fromTabId = evt.from.dataset.tabId;
+
+            if ( !containerId || !toTabId || !fromTabId ) {
+                console.error( 'Missing required data attributes' );
+                return;
+            }
+
+            // Find source and target tabs
+            const fromTab = this.data.tabs.find( tab => tab.id === fromTabId );
+            const toTab = this.data.tabs.find( tab => tab.id === toTabId );
+
+            if ( !fromTab || !toTab ) {
+                console.error( 'Could not find source or target tab' );
+                return;
+            }
+
+            // Find the actual container object
+            const containerIndex = fromTab.containers.findIndex( container => container.id === containerId );
+            if ( containerIndex === -1 ) {
+                console.error( 'Could not find moved container' );
+                return;
+            }
+
+            // Create a deep copy of the container object
+            const movedContainer = JSON.parse( JSON.stringify( fromTab.containers[ containerIndex ] ) );
+
+            // Remove from source
+            fromTab.containers.splice( containerIndex, 1 );
+
+            // Add to target at the correct position
+            if ( fromTabId === toTabId ) {
+                toTab.containers.splice( evt.newIndex, 0, movedContainer );
+            } else {
+                const newContainers = [ ...toTab.containers ];
+                newContainers.splice( evt.newIndex, 0, movedContainer );
+                toTab.containers = newContainers;
+            }
+
+            this.saveData();
+
+            // Re-render the UI to update container positions
             this.render();
         }
 
