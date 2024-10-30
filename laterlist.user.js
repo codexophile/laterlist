@@ -318,7 +318,10 @@
                                 <span class="container-name" data-container-id="${ container.id }">${ container.name }</span>
                                 <span class="link-count">${ container.links.length } links</span>
                             </div>
-                            <button class="btn btn-delete" data-delete-container="${ container.id }">×</button>
+                            <div class="container-actions">
+                                <button class="btn btn-rename" data-rename-container="${ container.id }">✏️</button>
+                                <button class="btn btn-delete" data-delete-container="${ container.id }">×</button>
+                            </div>
                         </div>
                         <div class="container-content" data-container-id="${ container.id }" data-tab-id="${ tab.id }">
                             ${ this.isFaviconView
@@ -457,14 +460,6 @@
                 } );
             } );
 
-            // Container name editing
-            document.querySelectorAll( '.container-name' ).forEach( nameEl => {
-                nameEl.addEventListener( 'dblclick', () => {
-                    const containerId = nameEl.dataset.containerId;
-                    this.renameContainer( containerId );
-                } );
-            } );
-
             // Main click handler for deletions and trash operations
             document.addEventListener( 'click', ( e ) => {
                 const deleteTab = e.target.dataset.deleteTab;
@@ -473,6 +468,7 @@
                 const moveToTrash = e.target.dataset.moveToTrash;
                 const restoreLink = e.target.dataset.restoreLink;
                 const permanentDelete = e.target.dataset.permanentDelete;
+                const renameContainer = e.target.dataset.renameContainer;
 
                 if ( deleteTab ) this.deleteTab( deleteTab );
                 if ( deleteContainer ) this.deleteContainer( deleteContainer );
@@ -484,6 +480,7 @@
                 }
                 if ( restoreLink ) this.restoreFromTrash( restoreLink );
                 if ( permanentDelete ) this.permanentDelete( permanentDelete );
+                if ( renameContainer ) this.renameContainer( renameContainer );
             } );
 
             // Handle links that should be moved to trash
@@ -552,6 +549,15 @@
                 }
             } );
 
+            // Add rename button event listeners
+            document.querySelectorAll( '.btn-rename' ).forEach( button => {
+                button.addEventListener( 'click', ( e ) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const containerId = button.dataset.renameContainer;
+                    this.renameContainer( containerId );
+                } );
+            } );
         }
 
         moveToTrash ( linkId ) {
