@@ -2,6 +2,10 @@
     user-select: none;
 }
 
+h1 {
+    margin: unset;
+}
+
 .header-left {
     display: flex;
     align-items: center;

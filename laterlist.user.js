@@ -171,12 +171,12 @@
 
             saveButton.textContent = '💾';
             saveButton.addEventListener( 'click', () => {
-                addHistoryEntry( url );
+                try { addHistoryEntry( url ); } catch { }
                 this.saveLink( url, title, tabSelect.value, containerSelect.value );
                 popup.remove();
             } );
             saveAndCloseBtn.addEventListener( 'click', () => {
-                addHistoryEntry( url );
+                try { addHistoryEntry( url ); } catch { }
                 this.saveLink( url, title, tabSelect.value, containerSelect.value );
                 popup.remove();
                 window.close();
@@ -965,5 +965,6 @@
 
     // Initialize the app
     new ReadLaterApp();
+    document.querySelector( `.tab-section` ).scrollIntoView();
 
 } )();
