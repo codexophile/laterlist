@@ -552,7 +552,7 @@
                     e.stopPropagation();
                     const containerId = button.dataset.renameContainer;
                     this.renameContainer( containerId );
-                } );
+                }, { once: true } );
             } );
 
             // Add delete container button event listeners
