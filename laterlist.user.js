@@ -67,6 +67,10 @@
             // Only initialize context menu if not on the view page
             if ( !location.href.includes( 'laterlist-view.html' ) ) {
                 this.initContextMenu();
+                GM_addValueChangeListener( 'trigger', async ( name, oldValue, newValue, remote ) => {
+                    if ( !remote ) return;
+                    GM_setValue( `tab-list-item-${ Math.random() }`, { title: document.title, url: window.location.href } );
+                } );
                 return;
             }
             this.init();
@@ -888,11 +892,6 @@
 
         async pullTabsIntoContainer ( containerId ) {
             try {
-                // Get the current tab
-                const [ currentTab ] = await browser.tabs.query( { active: true, currentWindow: true } );
-
-                // Get all tabs in the current window
-                const tabs = await browser.tabs.query( { currentWindow: true } );
 
                 const container = this.getCurrentTab().containers.find( c => c.id === containerId );
                 if ( !container ) {
@@ -900,12 +899,20 @@
                     return;
                 }
 
-                // Process each tab and add it to the container
-                tabs.forEach( tab => {
+                const keys = await GM.listValues();
+                keys.filter( key => key.startsWith( 'tab-list-item-' ) ).forEach( key => GM_deleteValue( key ) );
+                await GM.setValue( 'trigger', Date.now() );
+                await asyncTimeout( 1000 );
+                // get all values starting with 'tab-list-item-' and log their values
+                const allKeys = await GM.listValues();
+                const tabListKeys = allKeys.filter( key => key.startsWith( 'tab-list-item-' ) );
+                tabListKeys.forEach( tabListKey => {
+                    const tabListValue = GM_getValue( tabListKey );
+                    // Process each tab and add it to the container
                     const newLink = {
                         id: 'link-' + Date.now(),
-                        title: tab.title || tab.url,
-                        url: tab.url
+                        title: tabListValue.title || tabListValue.url,
+                        url: tabListValue.url
                     };
                     container.links.push( newLink );
                 } );
