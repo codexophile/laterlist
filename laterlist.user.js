@@ -903,11 +903,11 @@
                 keys.filter( key => key.startsWith( 'tab-list-item-' ) ).forEach( key => GM_deleteValue( key ) );
                 await GM.setValue( 'trigger', Date.now() );
                 await asyncTimeout( 1000 );
-                // get all values starting with 'tab-list-item-' and log their values
+                // get all values starting with 'tab-list-item-' 
                 const allKeys = await GM.listValues();
                 const tabListKeys = allKeys.filter( key => key.startsWith( 'tab-list-item-' ) );
-                tabListKeys.forEach( tabListKey => {
-                    const tabListValue = GM_getValue( tabListKey );
+                tabListKeys.forEach( async tabListKey => {
+                    const tabListValue = await GM.getValue( tabListKey );
                     // Process each tab and add it to the container
                     const newLink = {
                         id: 'link-' + Date.now(),
