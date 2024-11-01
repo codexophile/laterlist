@@ -228,6 +228,14 @@
             this.initSortable();
             this.initContainerSortable(); // Initialize Sortable for containers
             document.querySelector( `.tab-section` ).scrollIntoView();
+
+            // Set up ValueChangeListener
+            GM_addValueChangeListener( 'readLaterData', ( name, oldValue, newValue, remote ) => {
+                if ( remote ) {
+                    this.data = newValue;
+                    this.render();
+                }
+            } );
         }
 
         async saveData () {
