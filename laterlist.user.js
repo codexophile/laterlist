@@ -325,9 +325,10 @@
                                 <span class="link-count">${ container.links.length } links</span>
                             </div>
                             <div class="container-actions">
+                                <button class="btn btn-pull-tabs" data-pull-tabs-container="${ container.id }">⬅️</button>
                                 <button class="btn btn-rename" data-rename-container="${ container.id }">✏️</button>
                                 <button class="btn btn-delete" data-delete-container="${ container.id }">×</button>
-                                <button class="btn btn-trash-all" data-trash-all-container="${ container.id }">🗑️</button> <!-- New button -->
+                                <button class="btn btn-trash-all" data-trash-all-container="${ container.id }">🗑️</button> 
                             </div>
                         </div>
                         <div class="container-content" data-container-id="${ container.id }" data-tab-id="${ tab.id }">
@@ -588,6 +589,16 @@
                     e.stopPropagation();
                     const containerId = button.dataset.trashAllContainer;
                     this.trashAllLinksInContainer( containerId );
+                } );
+            } );
+
+            // Add event listener for the new "Pull Tabs" button
+            document.querySelectorAll( '.btn-pull-tabs' ).forEach( button => {
+                button.addEventListener( 'click', ( e ) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const containerId = button.dataset.pullTabsContainer;
+                    this.pullTabsIntoContainer( containerId );
                 } );
             } );
 
@@ -873,6 +884,37 @@
             container.name = newName;
             this.saveData();
             this.render();
+        }
+
+        async pullTabsIntoContainer ( containerId ) {
+            try {
+                // Get the current tab
+                const [ currentTab ] = await browser.tabs.query( { active: true, currentWindow: true } );
+
+                // Get all tabs in the current window
+                const tabs = await browser.tabs.query( { currentWindow: true } );
+
+                const container = this.getCurrentTab().containers.find( c => c.id === containerId );
+                if ( !container ) {
+                    console.error( 'Container not found' );
+                    return;
+                }
+
+                // Process each tab and add it to the container
+                tabs.forEach( tab => {
+                    const newLink = {
+                        id: 'link-' + Date.now(),
+                        title: tab.title || tab.url,
+                        url: tab.url
+                    };
+                    container.links.push( newLink );
+                } );
+
+                this.saveData();
+                this.render();
+            } catch ( error ) {
+                console.error( 'Error pulling tabs:', error );
+            }
         }
 
         renameTab ( tabId ) {
