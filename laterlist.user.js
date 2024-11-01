@@ -58,8 +58,6 @@
 
             this.isFaviconView = false; // Start in detailed view mode
             this.data = GM_getValue( 'readLaterData', DEFAULT_DATA );
-
-            this.data = GM_getValue( 'readLaterData', DEFAULT_DATA );
             // Initialize trash if it doesn't exist in saved data
             if ( !this.data.trash ) {
                 this.data.trash = [];
@@ -175,9 +173,9 @@
                 this.saveLink( url, title, tabSelect.value, containerSelect.value );
                 popup.remove();
             } );
-            saveAndCloseBtn.addEventListener( 'click', () => {
+            saveAndCloseBtn.addEventListener( 'click', async () => {
                 try { addHistoryEntry( url ); } catch { }
-                this.saveLink( url, title, tabSelect.value, containerSelect.value );
+                await this.saveLink( url, title, tabSelect.value, containerSelect.value );
                 popup.remove();
                 window.close();
             } );
@@ -211,7 +209,7 @@
             }
         }
 
-        saveLink ( url, title, tabId, containerId ) {
+        async saveLink ( url, title, tabId, containerId ) {
             const tab = this.data.tabs.find( t => t.id === tabId );
             const container = tab.containers.find( c => c.id === containerId );
 
@@ -222,17 +220,18 @@
             };
 
             container.links.push( newLink );
-            this.saveData();
+            await this.saveData();
         }
 
         init () {
             this.render();
             this.initSortable();
             this.initContainerSortable(); // Initialize Sortable for containers
+            document.querySelector( `.tab-section` ).scrollIntoView();
         }
 
-        saveData () {
-            GM_setValue( 'readLaterData', this.data );
+        async saveData () {
+            await GM.setValue( 'readLaterData', this.data );
             // Debugging: Log the saved data
             console.log( 'Data saved:', this.data );
         }
@@ -1065,6 +1064,5 @@
 
     // Initialize the app
     new ReadLaterApp();
-    document.querySelector( `.tab-section` ).scrollIntoView();
 
 } )();
