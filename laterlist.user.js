@@ -331,8 +331,8 @@
                             <div class="container-actions">
                                 <button class="btn btn-pull-tabs" data-pull-tabs-container="${ container.id }">⬅️</button>
                                 <button class="btn btn-rename" data-rename-container="${ container.id }">✏️</button>
-                                <button class="btn btn-delete" data-delete-container="${ container.id }">×</button>
                                 <button class="btn btn-trash-all" data-trash-all-container="${ container.id }">🗑️</button> 
+                                <button class="btn btn-delete" data-delete-container="${ container.id }">×</button>
                             </div>
                         </div>
                         <div class="container-content" data-container-id="${ container.id }" data-tab-id="${ tab.id }">
