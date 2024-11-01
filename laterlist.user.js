@@ -324,6 +324,7 @@
                             <div class="container-actions">
                                 <button class="btn btn-rename" data-rename-container="${ container.id }">✏️</button>
                                 <button class="btn btn-delete" data-delete-container="${ container.id }">×</button>
+                                <button class="btn btn-trash-all" data-trash-all-container="${ container.id }">🗑️ All</button> <!-- New button -->
                             </div>
                         </div>
                         <div class="container-content" data-container-id="${ container.id }" data-tab-id="${ tab.id }">
@@ -577,9 +578,31 @@
                 button.replaceWith( button.cloneNode( true ) );
             } );
 
+            // Add event listener for the new "Trash All" button
+            document.querySelectorAll( '.btn-trash-all' ).forEach( button => {
+                button.addEventListener( 'click', ( e ) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const containerId = button.dataset.trashAllContainer;
+                    this.trashAllLinksInContainer( containerId );
+                } );
+            } );
+
             // Debugging: Log all rename and delete container buttons found
             console.log( 'Rename Container Buttons:', document.querySelectorAll( '.btn-rename' ) );
             console.log( 'Delete Container Buttons:', document.querySelectorAll( '.btn-delete[data-delete-container]' ) );
+        }
+
+        trashAllLinksInContainer ( containerId ) {
+            const currentTab = this.getCurrentTab();
+            const container = currentTab.containers.find( c => c.id === containerId );
+            if ( container ) {
+                // Move all links from the container to the trash
+                this.data.trash.push( ...container.links );
+                container.links = [];
+                this.saveData();
+                this.render();
+            }
         }
 
         moveToTrash ( linkId ) {
