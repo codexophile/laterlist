@@ -169,16 +169,19 @@
 
             saveButton.textContent = '💾';
             saveButton.addEventListener( 'click', () => {
-                try { addHistoryEntry( url ); } catch { }
-                this.saveLink( url, title, tabSelect.value, containerSelect.value );
-                popup.remove();
+                saveAndClosePopup();
             } );
             saveAndCloseBtn.addEventListener( 'click', async () => {
-                try { addHistoryEntry( url ); } catch { }
-                await this.saveLink( url, title, tabSelect.value, containerSelect.value );
-                popup.remove();
+                await saveAndClosePopup();
                 window.close();
             } );
+
+            const saveAndClosePopup = async () => {
+                try { addHistoryEntry( url ); } catch { }
+                this.data = await GM.getValue( 'readLaterData', DEFAULT_DATA );
+                await this.saveLink( url, title, tabSelect.value, containerSelect.value );
+                popup.remove();
+            };
 
             popup.appendChild( tabSelect );
             popup.appendChild( containerSelect );
@@ -324,7 +327,7 @@
                             <div class="container-actions">
                                 <button class="btn btn-rename" data-rename-container="${ container.id }">✏️</button>
                                 <button class="btn btn-delete" data-delete-container="${ container.id }">×</button>
-                                <button class="btn btn-trash-all" data-trash-all-container="${ container.id }">🗑️ All</button> <!-- New button -->
+                                <button class="btn btn-trash-all" data-trash-all-container="${ container.id }">🗑️</button> <!-- New button -->
                             </div>
                         </div>
                         <div class="container-content" data-container-id="${ container.id }" data-tab-id="${ tab.id }">
