@@ -325,6 +325,7 @@
                                 <span class="link-count">${ container.links.length } links</span>
                             </div>
                             <div class="container-actions">
+                                <button class="btn btn-open-all" data-open-all-container="${ container.id }">↗️</button>
                                 <button class="btn btn-pull-tabs" data-pull-tabs-container="${ container.id }">⬅️</button>
                                 <button class="btn btn-rename" data-rename-container="${ container.id }">✏️</button>
                                 <button class="btn btn-trash-all" data-trash-all-container="${ container.id }">🗑️</button> 
@@ -597,6 +598,16 @@
                     e.stopPropagation();
                     const containerId = button.dataset.pullTabsContainer;
                     this.pullTabsIntoContainer( containerId );
+                } );
+            } );
+
+            document.querySelectorAll( '.btn-open-all' ).forEach( button => {
+                button.addEventListener( 'click', function () {
+                    const container = this.closest( '.container' );
+                    const links = container.querySelectorAll( '.link a' );
+                    links.forEach( link => {
+                        GM_openInTab( link.href );
+                    } );
                 } );
             } );
 
