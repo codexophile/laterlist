@@ -411,7 +411,6 @@
         }
 
         //* Event listeners
-        // Modified attachEventListeners function
         attachEventListeners () {
             // Remove all previous add container listeners
             document.querySelectorAll( '.add-container-btn' ).forEach( btn => {
@@ -906,14 +905,13 @@
                 await Promise.all( tabListKeys.map( async tabListKey => {
                     const tabListValue = await GM.getValue( tabListKey );
                     const newLink = {
-                        id: 'link-' + Date.now(),
+                        id: 'link-' + Date.now() + Math.random().toString().slice( 2 ),
                         title: tabListValue.title || tabListValue.url,
                         url: tabListValue.url
                     };
                     container.links.push( newLink );
                 } ) );
 
-                console.log( container.links );
                 this.saveData();
                 this.render();
             } catch ( error ) {
