@@ -193,7 +193,6 @@
             popup.appendChild( saveAndCloseBtn );
 
             document.body.appendChild( popup );
-            console.log( popup );
 
             // Close popup when clicking outside
             document.addEventListener( 'click', function closePopup ( e ) {
@@ -248,7 +247,6 @@
         async saveData () {
             await GM.setValue( 'readLaterData', this.data );
             // Debugging: Log the saved data
-            console.log( 'Data saved:', this.data );
         }
 
         render () {
@@ -287,8 +285,6 @@
                 this.initContainerSortable(); // Ensure Sortable is initialized for containers
             }
 
-            // Debugging: Log the rendered data
-            console.log( 'Rendered data:', this.data );
         }
 
         renderTrash () {
@@ -332,7 +328,7 @@
                                 <button class="btn btn-pull-tabs" data-pull-tabs-container="${ container.id }">⬅️</button>
                                 <button class="btn btn-rename" data-rename-container="${ container.id }">✏️</button>
                                 <button class="btn btn-trash-all" data-trash-all-container="${ container.id }">🗑️</button> 
-                                <button class="btn btn-delete" data-delete-container="${ container.id }">×</button>
+                                <button class="btn btn-delete" data-delete-container="${ container.id }">❌</button>
                             </div>
                         </div>
                         <div class="container-content" data-container-id="${ container.id }" data-tab-id="${ tab.id }">
@@ -428,7 +424,6 @@
                 btn.addEventListener( 'click', ( e ) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log( 'Add Container Button Clicked for Tab:', tabId );
                     this.addContainer( tabId );
                 }, { once: true } ); // This ensures the listener only fires once
             } );
@@ -606,9 +601,6 @@
                 } );
             } );
 
-            // Debugging: Log all rename and delete container buttons found
-            console.log( 'Rename Container Buttons:', document.querySelectorAll( '.btn-rename' ) );
-            console.log( 'Delete Container Buttons:', document.querySelectorAll( '.btn-delete[data-delete-container]' ) );
         }
 
         trashAllLinksInContainer ( containerId ) {
@@ -892,7 +884,6 @@
 
         async pullTabsIntoContainer ( containerId ) {
             try {
-
                 const container = this.getCurrentTab().containers.find( c => c.id === containerId );
                 if ( !container ) {
                     console.error( 'Container not found' );
@@ -903,20 +894,26 @@
                 keys.filter( key => key.startsWith( 'tab-list-item-' ) ).forEach( key => GM_deleteValue( key ) );
                 await GM.setValue( 'trigger', Date.now() );
                 await asyncTimeout( 1000 );
-                // get all values starting with 'tab-list-item-' 
+
                 const allKeys = await GM.listValues();
                 const tabListKeys = allKeys.filter( key => key.startsWith( 'tab-list-item-' ) );
-                tabListKeys.forEach( async tabListKey => {
+                if ( !tabListKeys.length ) {
+                    alert( 'No tabs found!' );
+                    return;
+                }
+
+                // Use Promise.all to wait for all async operations to complete
+                await Promise.all( tabListKeys.map( async tabListKey => {
                     const tabListValue = await GM.getValue( tabListKey );
-                    // Process each tab and add it to the container
                     const newLink = {
                         id: 'link-' + Date.now(),
                         title: tabListValue.title || tabListValue.url,
                         url: tabListValue.url
                     };
                     container.links.push( newLink );
-                } );
+                } ) );
 
+                console.log( container.links );
                 this.saveData();
                 this.render();
             } catch ( error ) {
