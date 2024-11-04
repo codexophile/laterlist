@@ -328,11 +328,11 @@
                                 <span class="link-count">${ container.links.length } links</span>
                             </div>
                             <div class="container-actions">
-                                <button class="btn btn-open-all" data-open-all-container="${ container.id }">↗️</button>
-                                <button class="btn btn-pull-tabs" data-pull-tabs-container="${ container.id }">⬅️</button>
-                                <button class="btn btn-rename" data-rename-container="${ container.id }">✏️</button>
-                                <button class="btn btn-trash-all" data-trash-all-container="${ container.id }">🗑️</button> 
-                                <button class="btn btn-delete" data-delete-container="${ container.id }">❌</button>
+                                <button title="Open all"         class="btn btn-open-all"  data-open-all-container="${ container.id }" >↗️</button>
+                                <button title="Pull all"         class="btn btn-pull-tabs" data-pull-tabs-container="${ container.id }">⬅️</button>
+                                <button title="Rename"           class="btn btn-rename"    data-rename-container="${ container.id }"   >✏️</button>
+                                <button title="Trash all"        class="btn btn-trash-all" data-trash-all-container="${ container.id }">🗑️</button> 
+                                <button title="Delete container" class="btn btn-delete"    data-delete-container="${ container.id }"   >❌</button>
                             </div>
                         </div>
                         <div class="container-content" data-container-id="${ container.id }" data-tab-id="${ tab.id }">
@@ -603,6 +603,7 @@
                     e.target.textContent = '⏳';
                     try { this.pullTabsIntoContainer( containerId ); }
                     catch ( error ) { alert( error ); }
+                    e.target.textContent = '⬅️';
                 } );
             } );
 
