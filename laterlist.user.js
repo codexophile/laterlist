@@ -328,6 +328,7 @@
                                 <span class="link-count">${ container.links.length } links</span>
                             </div>
                             <div class="container-actions">
+                                <button title="Import JSON"      class="btn btn-import-backup" data-import-backup="${ container.id }"  >📥</button>
                                 <button title="Open all"         class="btn btn-open-all"  data-open-all-container="${ container.id }" >↗️</button>
                                 <button title="Pull all"         class="btn btn-pull-tabs" data-pull-tabs-container="${ container.id }">⬅️</button>
                                 <button title="Rename"           class="btn btn-rename"    data-rename-container="${ container.id }"   >✏️</button>
@@ -614,6 +615,16 @@
                     links.forEach( link => {
                         GM_openInTab( link.href );
                     } );
+                } );
+            } );
+
+            // Add event listener for the new "Import Backup" button
+            document.querySelectorAll( '.btn-import-backup' ).forEach( button => {
+                button.addEventListener( 'click', ( e ) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const containerId = button.dataset.importBackup;
+                    this.importBackup( containerId );
                 } );
             } );
 
