@@ -11,6 +11,9 @@
 
 ( function () {
     'use strict';
+    if ( window.top != window.self ) return; //don't run on frames or iframes
+
+
     // Sample data structure
     const DEFAULT_DATA = {
         tabs: [
@@ -597,7 +600,9 @@
                     e.preventDefault();
                     e.stopPropagation();
                     const containerId = button.dataset.pullTabsContainer;
-                    this.pullTabsIntoContainer( containerId );
+                    e.target.textContent = '⏳';
+                    try { this.pullTabsIntoContainer( containerId ); }
+                    catch ( error ) { alert( error ); }
                 } );
             } );
 
@@ -893,41 +898,37 @@
         }
 
         async pullTabsIntoContainer ( containerId ) {
-            try {
-                const container = this.getCurrentTab().containers.find( c => c.id === containerId );
-                if ( !container ) {
-                    console.error( 'Container not found' );
-                    return;
-                }
-
-                const keys = await GM.listValues();
-                keys.filter( key => key.startsWith( 'tab-list-item-' ) ).forEach( key => GM_deleteValue( key ) );
-                await GM.setValue( 'trigger', Date.now() );
-                await asyncTimeout( 1000 );
-
-                const allKeys = await GM.listValues();
-                const tabListKeys = allKeys.filter( key => key.startsWith( 'tab-list-item-' ) );
-                if ( !tabListKeys.length ) {
-                    alert( 'No tabs found!' );
-                    return;
-                }
-
-                // Use Promise.all to wait for all async operations to complete
-                await Promise.all( tabListKeys.map( async tabListKey => {
-                    const tabListValue = await GM.getValue( tabListKey );
-                    const newLink = {
-                        id: 'link-' + Date.now() + Math.random().toString().slice( 2 ),
-                        title: tabListValue.title || tabListValue.url,
-                        url: tabListValue.url
-                    };
-                    container.links.push( newLink );
-                } ) );
-
-                this.saveData();
-                this.render();
-            } catch ( error ) {
-                console.error( 'Error pulling tabs:', error );
+            const container = this.getCurrentTab().containers.find( c => c.id === containerId );
+            if ( !container ) {
+                console.error( 'Container not found' );
+                return;
             }
+
+            const keys = await GM.listValues();
+            keys.filter( key => key.startsWith( 'tab-list-item-' ) ).forEach( key => GM_deleteValue( key ) );
+            await GM.setValue( 'trigger', Date.now() );
+            await asyncTimeout( 1000 );
+
+            const allKeys = await GM.listValues();
+            const tabListKeys = allKeys.filter( key => key.startsWith( 'tab-list-item-' ) );
+            if ( !tabListKeys.length ) {
+                alert( 'No tabs found!' );
+                return;
+            }
+
+            // Use Promise.all to wait for all async operations to complete
+            await Promise.all( tabListKeys.map( async tabListKey => {
+                const tabListValue = await GM.getValue( tabListKey );
+                const newLink = {
+                    id: 'link-' + Date.now() + Math.random().toString().slice( 2 ),
+                    title: tabListValue.title || tabListValue.url,
+                    url: tabListValue.url
+                };
+                container.links.push( newLink );
+            } ) );
+
+            this.saveData();
+            this.render();
         }
 
         renameTab ( tabId ) {
