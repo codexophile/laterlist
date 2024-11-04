@@ -943,6 +943,64 @@
             this.render();
         }
 
+        importBackup ( containerId ) {
+            const input = document.createElement( 'input' );
+            input.type = 'file';
+            input.accept = 'application/json';
+
+            input.onchange = e => {
+                const file = e.target.files[ 0 ];
+                const reader = new FileReader();
+
+                reader.onload = event => {
+                    try {
+                        const importedData = JSON.parse( event.target.result );
+
+                        // Validate imported data structure
+                        if ( !this.isValidBackupStructure( importedData ) ) {
+                            alert( 'Invalid backup structure in imported file' );
+                            return;
+                        }
+
+                        // Import links into the specified container
+                        const container = this.getCurrentTab().containers.find( c => c.id === containerId );
+                        if ( container ) {
+                            importedData.lists[ 0 ].cards.forEach( card => {
+                                container.links.push( {
+                                    id: 'link-' + Date.now() + Math.random().toString().slice( 2 ),
+                                    title: card.title,
+                                    url: card.url
+                                } );
+                            } );
+                            this.saveData();
+                            this.render();
+                            alert( `${ importedData.lists[ 0 ].cards.length } links imported successfully!` );
+                        }
+                    } catch ( error ) {
+                        alert( 'Error importing backup: ' + error.message );
+                    }
+                };
+
+                reader.readAsText( file );
+            };
+
+            input.click();
+        }
+
+        isValidBackupStructure ( data ) {
+            // Basic structure validation
+            if ( !data.lists || !Array.isArray( data.lists ) || data.lists.length === 0 ) return false;
+            const list = data.lists[ 0 ];
+            if ( !list.cards || !Array.isArray( list.cards ) ) return false;
+
+            // Validate each card
+            for ( const card of list.cards ) {
+                if ( !card.title || !card.url ) return false;
+            }
+
+            return true;
+        }
+
         renameTab ( tabId ) {
             const tab = this.data.tabs.find( t => t.id === tabId );
             if ( !tab ) return;
