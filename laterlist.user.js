@@ -76,6 +76,20 @@
                 } );
                 return;
             }
+
+            window.addEventListener( 'popstate', () => {
+                const path = window.location.pathname;
+                if ( path === '/trash' ) {
+                    this.activeTab = 'trash';
+                } else if ( path.startsWith( '/tab/' ) ) {
+                    const tabId = path.split( '/' ).pop();
+                    this.activeTab = tabId;
+                } else {
+                    this.activeTab = this.data.tabs[ 0 ].id; // Default to the first tab
+                }
+                this.render();
+            } );
+
             this.init();
         }
 
@@ -233,6 +247,16 @@
         }
 
         init () {
+            const path = window.location.pathname;
+            if ( path === '/trash' ) {
+                this.activeTab = 'trash';
+            } else if ( path.startsWith( '/tab/' ) ) {
+                const tabId = path.split( '/' ).pop();
+                this.activeTab = tabId;
+            } else {
+                this.activeTab = this.data.tabs[ 0 ].id; // Default to the first tab
+            }
+
             this.render();
             this.initSortable();
             this.initContainerSortable(); // Initialize Sortable for containers
@@ -433,6 +457,9 @@
 
         //* Event listeners
         attachEventListeners () {
+
+
+
             // Remove all previous add container listeners
             document.querySelectorAll( '.add-container-btn' ).forEach( btn => {
                 btn.replaceWith( btn.cloneNode( true ) );
@@ -700,6 +727,13 @@
             if ( this.isDragging ) return; // Don't switch tabs during drag
 
             this.activeTab = tabId;
+
+            // Update the URL based on the active tab or trash
+            if ( tabId === 'trash' ) {
+                history.pushState( null, '', '/trash' );
+            } else {
+                history.pushState( null, '', `/tab/${ tabId }` );
+            }
 
             // Re-render the entire view when switching between normal tabs and trash
             this.render();
