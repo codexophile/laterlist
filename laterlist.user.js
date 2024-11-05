@@ -77,6 +77,19 @@
                 return;
             }
 
+            window.addEventListener( 'hashchange', () => {
+                const hash = window.location.hash.slice( 1 ); // Remove the '#'
+                if ( hash === 'trash' ) {
+                    this.activeTab = 'trash';
+                } else if ( hash.startsWith( 'tab/' ) ) {
+                    const tabId = hash.split( '/' ).pop();
+                    this.activeTab = tabId;
+                } else {
+                    this.activeTab = this.data.tabs[ 0 ].id; // Default to the first tab
+                }
+                this.render();
+            } );
+
             window.addEventListener( 'popstate', () => {
                 const path = window.location.pathname;
                 if ( path === '/trash' ) {
@@ -247,11 +260,11 @@
         }
 
         init () {
-            const path = window.location.pathname;
-            if ( path === '/trash' ) {
+            const hash = window.location.hash.slice( 1 ); // Remove the '#'
+            if ( hash === 'trash' ) {
                 this.activeTab = 'trash';
-            } else if ( path.startsWith( '/tab/' ) ) {
-                const tabId = path.split( '/' ).pop();
+            } else if ( hash.startsWith( 'tab/' ) ) {
+                const tabId = hash.split( '/' ).pop();
                 this.activeTab = tabId;
             } else {
                 this.activeTab = this.data.tabs[ 0 ].id; // Default to the first tab
@@ -728,11 +741,11 @@
 
             this.activeTab = tabId;
 
-            // Update the URL based on the active tab or trash
+            // Update the URL based on the active tab or trash using hash-based routing
             if ( tabId === 'trash' ) {
-                history.pushState( null, '', '/trash' );
+                window.location.hash = 'trash';
             } else {
-                history.pushState( null, '', `/tab/${ tabId }` );
+                window.location.hash = `tab/${ tabId }`;
             }
 
             // Re-render the entire view when switching between normal tabs and trash
