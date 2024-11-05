@@ -290,80 +290,76 @@
 
         }
 
-        renderTrash () {
-            return `
-                <div class="trash-container">
-                    <h2>Trash</h2>
-                    ${ this.data.trash.map( link => `
-                        <div class="trash-link" data-link-id="${ link.id }">
-                            <a href="${ link.url }" target="_blank">${ link.title }</a>
-                            <div class="trash-actions">
-                                <button class="btn btn-restore" data-restore-link="${ link.id }">↩</button>
-                                <button class="btn btn-delete" data-permanent-delete="${ link.id }">×</button>
+        renderTabs () {
+            return this.data.tabs.map( tab => {
+                // Create a map to track URLs and their counts
+                const urlMap = new Map();
+
+                // Populate the map with URLs and their counts
+                tab.containers.forEach( container => {
+                    container.links.forEach( link => {
+                        if ( urlMap.has( link.url ) ) {
+                            urlMap.set( link.url, urlMap.get( link.url ) + 1 );
+                        } else {
+                            urlMap.set( link.url, 1 );
+                        }
+                    } );
+                } );
+
+                return `
+            <div class="tab-section" data-tab-section="${ tab.id }">
+                <!-- Update the total number of links here -->
+                <div class="tab-label">${ tab.name } (${ this.getTotalLinksInTab( tab ) } links)</div>
+                <div class="containers ${ tab.id === this.activeTab ? 'active-tab' : '' }" 
+                     data-tab-content="${ tab.id }" 
+                     data-tab-id="${ tab.id }" 
+                     style="display: ${ tab.id === this.activeTab ? 'grid' : 'none' }">
+                    <div class="drag-indicator"></div>
+                    ${ tab.containers.map( container => `
+                        <div class="container" data-container-id="${ container.id }" data-tab-id="${ tab.id }">
+                            <div class="container-header">
+                                <div class="container-stats">
+                                    <span class="container-name" data-container-id="${ container.id }">${ container.name }</span>
+                                    <span class="link-count">${ container.links.length } links</span>
+                                </div>
+                                <div class="container-actions">
+                                    <button title="Import JSON"      class="btn btn-import-backup" data-import-backup="${ container.id }"  >📥</button>
+                                    <button title="Open all"         class="btn btn-open-all"  data-open-all-container="${ container.id }" >↗️</button>
+                                    <button title="Pull all"         class="btn btn-pull-tabs" data-pull-tabs-container="${ container.id }">⬅️</button>
+                                    <button title="Rename"           class="btn btn-rename"    data-rename-container="${ container.id }"   >✏️</button>
+                                    <button title="Trash all"        class="btn btn-trash-all" data-trash-all-container="${ container.id }">🗑️</button> 
+                                    <button title="Delete container" class="btn btn-delete"    data-delete-container="${ container.id }"   >❌</button>
+                                </div>
+                            </div>
+                            <div class="container-content" data-container-id="${ container.id }" data-tab-id="${ tab.id }">
+                                ${ this.isFaviconView
+                        ? container.links.map( link => `
+                                        <div class="link ${ urlMap.get( link.url ) > 1 ? 'duplicate-link' : '' }" data-link-id="${ link.id }" style="display: inline-block; padding: 8px;">
+                                            <a href="${ link.url }" target="_blank">
+                                                <img src="https://www.google.com/s2/favicons?domain=${ new URL( link.url ).hostname }" 
+                                                     alt="favicon" style="width: 32px; height: 32px;">
+                                            </a>
+                                        </div>
+                                    `).join( '' )
+                        : container.links.map( link => `
+                                        <div class="link ${ urlMap.get( link.url ) > 1 ? 'duplicate-link' : '' }" data-link-id="${ link.id }">
+                                            <img src="https://www.google.com/s2/favicons?domain=${ new URL( link.url ).hostname }" 
+                                                 alt="favicon" style="width: 16px; height: 16px; margin-right: 8px;">
+                                            <a href="${ link.url }" 
+                                               target="_blank" 
+                                               data-move-to-trash="${ link.id }" 
+                                               data-link-url="${ link.url }">${ link.title }</a>
+                                            <button class="btn btn-delete" data-delete-link="${ link.id }">×</button>
+                                        </div>
+                                    `).join( '' ) }
                             </div>
                         </div>
                     `).join( '' ) }
-                    ${ this.data.trash.length > 0 ? `
-                        <button class="btn empty-trash-btn" id="emptyTrash">Empty Trash</button>
-                    ` : '<p>Trash is empty</p>' }
+                    <button class="btn add-container-btn" id="add-container-${ tab.id }">Add Container</button>
                 </div>
-            `;
-        }
-
-        renderTabs () {
-            return this.data.tabs.map( tab => `
-        <div class="tab-section" data-tab-section="${ tab.id }">
-            <!-- Update the total number of links here -->
-            <div class="tab-label">${ tab.name } (${ this.getTotalLinksInTab( tab ) } links)</div>
-            <div class="containers ${ tab.id === this.activeTab ? 'active-tab' : '' }" 
-                 data-tab-content="${ tab.id }" 
-                 data-tab-id="${ tab.id }" 
-                 style="display: ${ tab.id === this.activeTab ? 'grid' : 'none' }">
-                <div class="drag-indicator"></div>
-                ${ tab.containers.map( container => `
-                    <div class="container" data-container-id="${ container.id }" data-tab-id="${ tab.id }">
-                        <div class="container-header">
-                            <div class="container-stats">
-                                <span class="container-name" data-container-id="${ container.id }">${ container.name }</span>
-                                <span class="link-count">${ container.links.length } links</span>
-                            </div>
-                            <div class="container-actions">
-                                <button title="Import JSON"      class="btn btn-import-backup" data-import-backup="${ container.id }"  >📥</button>
-                                <button title="Open all"         class="btn btn-open-all"  data-open-all-container="${ container.id }" >↗️</button>
-                                <button title="Pull all"         class="btn btn-pull-tabs" data-pull-tabs-container="${ container.id }">⬅️</button>
-                                <button title="Rename"           class="btn btn-rename"    data-rename-container="${ container.id }"   >✏️</button>
-                                <button title="Trash all"        class="btn btn-trash-all" data-trash-all-container="${ container.id }">🗑️</button> 
-                                <button title="Delete container" class="btn btn-delete"    data-delete-container="${ container.id }"   >❌</button>
-                            </div>
-                        </div>
-                        <div class="container-content" data-container-id="${ container.id }" data-tab-id="${ tab.id }">
-                            ${ this.isFaviconView
-                    ? container.links.map( link => `
-                                    <div class="link" data-link-id="${ link.id }" style="display: inline-block; padding: 8px;">
-                                        <a href="${ link.url }" target="_blank">
-                                            <img src="https://www.google.com/s2/favicons?domain=${ new URL( link.url ).hostname }" 
-                                                 alt="favicon" style="width: 32px; height: 32px;">
-                                        </a>
-                                    </div>
-                                `).join( '' )
-                    : container.links.map( link => `
-                                    <div class="link" data-link-id="${ link.id }">
-                                        <img src="https://www.google.com/s2/favicons?domain=${ new URL( link.url ).hostname }" 
-                                             alt="favicon" style="width: 16px; height: 16px; margin-right: 8px;">
-                                        <a href="${ link.url }" 
-                                           target="_blank" 
-                                           data-move-to-trash="${ link.id }" 
-                                           data-link-url="${ link.url }">${ link.title }</a>
-                                        <button class="btn btn-delete" data-delete-link="${ link.id }">×</button>
-                                    </div>
-                                `).join( '' ) }
-                        </div>
-                    </div>
-                `).join( '' ) }
-                <button class="btn add-container-btn" id="add-container-${ tab.id }">Add Container</button>
             </div>
-        </div>
-    `).join( '' );
+        `;
+            } ).join( '' );
         }
 
 
