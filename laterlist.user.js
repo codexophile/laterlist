@@ -362,6 +362,26 @@
             } ).join( '' );
         }
 
+        renderTrash () {
+            return `
+                <div class="trash-container">
+                    <h2>Trash</h2>
+                    ${ this.data.trash.map( link => `
+                        <div class="trash-link" data-link-id="${ link.id }">
+                            <a href="${ link.url }" target="_blank">${ link.title }</a>
+                            <div class="trash-actions">
+                                <button class="btn btn-restore" data-restore-link="${ link.id }">↩</button>
+                                <button class="btn btn-delete" data-permanent-delete="${ link.id }">×</button>
+                            </div>
+                        </div>
+                    `).join( '' ) }
+                    ${ this.data.trash.length > 0 ? `
+                        <button class="btn empty-trash-btn" id="emptyTrash">Empty Trash</button>
+                    ` : '<p>Trash is empty</p>' }
+                </div>
+            `;
+        }
+
 
         getTotalLinksInTab ( tab ) {
             return tab.containers.reduce( ( total, container ) => total + container.links.length, 0 );
