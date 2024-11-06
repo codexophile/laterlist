@@ -141,11 +141,11 @@
                 const url = targetAnchor ? targetAnchor.href : window.location.href;
                 const title = targetAnchor ? targetAnchor.textContent.trim() : document.title;
 
-                this.showPopup( e, url, title );
+                this.showPopup( e, url, title, targetAnchor );
             } );
         }
 
-        showPopup ( event, url, title ) {
+        showPopup ( event, url, title, targetAnchor ) {
             // Remove any existing popup
             const existingPopup = document.querySelector( '.laterlist-popup' );
             if ( existingPopup ) existingPopup.remove();
@@ -169,7 +169,6 @@
             const tabSelect = document.createElement( 'select' );
             const containerSelect = document.createElement( 'select' );
             const saveButton = document.createElement( 'button' );
-            const saveAndCloseBtn = generateElements( '<button>💾❌</button>' );
 
             // Populate tab select
             this.data.tabs.forEach( tab => {
@@ -205,22 +204,26 @@
             saveButton.addEventListener( 'click', () => {
                 saveAndClosePopup();
             } );
-            saveAndCloseBtn.addEventListener( 'click', async () => {
-                await saveAndClosePopup();
-                window.close();
-            } );
-
-            const saveAndClosePopup = async () => {
-                try { addHistoryEntry( url ); } catch { }
-                this.data = await GM.getValue( 'readLaterData', DEFAULT_DATA );
-                await this.saveLink( url, title, tabSelect.value, containerSelect.value );
-                popup.remove();
-            };
 
             popup.appendChild( tabSelect );
             popup.appendChild( containerSelect );
             popup.appendChild( saveButton );
-            popup.appendChild( saveAndCloseBtn );
+
+            if ( !targetAnchor ) {
+                const saveAndCloseBtn = generateElements( '<button>💾❌</button>' );
+                saveAndCloseBtn.addEventListener( 'click', async () => {
+                    await saveAndClosePopup();
+                    window.close();
+                } );
+
+                const saveAndClosePopup = async () => {
+                    try { addHistoryEntry( url ); } catch { }
+                    this.data = await GM.getValue( 'readLaterData', DEFAULT_DATA );
+                    await this.saveLink( url, title, tabSelect.value, containerSelect.value );
+                    popup.remove();
+                };
+                popup.appendChild( saveAndCloseBtn );
+            }
 
             document.body.appendChild( popup );
 
@@ -470,8 +473,6 @@
 
         //* Event listeners
         attachEventListeners () {
-
-
 
             // Remove all previous add container listeners
             document.querySelectorAll( '.add-container-btn' ).forEach( btn => {
