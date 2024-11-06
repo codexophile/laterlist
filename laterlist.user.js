@@ -156,14 +156,16 @@
                 left: ${ event.clientX }px;
                 top: ${ event.clientY }px;
                 position: fixed;
-                background: #1a1b1e;
-                border: 1px solid #404040;
+                background: #2e3440;
+                border: 1px solid #4c566a;
                 border-radius: 8px;
-                padding: 12px;
+                padding: 16px;
                 z-index: 999999;
-                color: #ffffff;
+                color: #d8dee9;
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+                max-width: 300px;
+                width: 100%;
             `);
 
             const tabSelect = document.createElement( 'select' );
@@ -200,7 +202,7 @@
             tabSelect.addEventListener( 'change', updateContainers );
             updateContainers();
 
-            saveButton.textContent = '💾';
+            saveButton.textContent = '💾 Save';
             saveButton.addEventListener( 'click', () => {
                 saveAndClosePopup();
             } );
@@ -210,7 +212,7 @@
             popup.appendChild( saveButton );
 
             if ( !targetAnchor ) {
-                const saveAndCloseBtn = generateElements( '<button>💾❌</button>' );
+                const saveAndCloseBtn = generateElements( '<button>💾❌ Save & Close</button>' );
                 saveAndCloseBtn.addEventListener( 'click', async () => {
                     await saveAndClosePopup();
                     window.close();
@@ -226,6 +228,18 @@
             }
 
             document.body.appendChild( popup );
+
+            // Ensure popup stays within the viewport
+            const rect = popup.getBoundingClientRect();
+            const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+            const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+
+            if ( rect.right > viewportWidth ) {
+                popup.style.left = `${ viewportWidth - rect.width - 10 }px`;
+            }
+            if ( rect.bottom > viewportHeight ) {
+                popup.style.top = `${ viewportHeight - rect.height - 10 }px`;
+            }
 
             // Close popup when clicking outside
             document.addEventListener( 'click', function closePopup ( e ) {
