@@ -153,20 +153,31 @@
             const popup = document.createElement( 'div' );
             popup.className = 'laterlist-popup';
             style( popup, `
-                left: ${ event.clientX }px;
-                top: ${ event.clientY }px;
-                position: fixed;
-                background: #2e3440;
-                border: 1px solid #4c566a;
-                border-radius: 8px;
-                padding: 16px;
-                z-index: 999999;
-                color: #d8dee9;
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-                max-width: 300px;
-                width: 100%;
-            `);
+        left: ${ event.clientX }px;
+        top: ${ event.clientY }px;
+        position: fixed;
+        background: #2e3440;
+        border: 1px solid #4c566a;
+        border-radius: 8px;
+        padding: 16px;
+        z-index: 999999;
+        color: #d8dee9;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        max-width: 300px;
+        width: 100%;
+    `);
+
+            const titleElement = document.createElement( 'div' );
+            titleElement.textContent = title;
+            titleElement.style.fontWeight = 'bold';
+            titleElement.style.marginBottom = '8px';
+
+            const urlElement = document.createElement( 'div' );
+            urlElement.textContent = url;
+            urlElement.style.fontSize = '0.9em';
+            urlElement.style.color = '#81a1c1';
+            urlElement.style.marginBottom = '16px';
 
             const tabSelect = document.createElement( 'select' );
             const containerSelect = document.createElement( 'select' );
@@ -207,6 +218,8 @@
                 saveAndClosePopup();
             } );
 
+            popup.appendChild( titleElement );
+            popup.appendChild( urlElement );
             popup.appendChild( tabSelect );
             popup.appendChild( containerSelect );
             popup.appendChild( saveButton );
