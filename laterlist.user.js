@@ -127,8 +127,14 @@
             this.initSortable();
         }
 
+        async initContextMenu () {
 
-        initContextMenu () {
+            const collapsible = await Collapsible();
+            const laterlistCollapsibleBtn = collapsible.addButton( '⏳', null, ( event ) => {
+                this.showPopup( event, location.href, document.title );
+                event.preventDefault();
+            } );
+
             document.addEventListener( 'contextmenu', ( e ) => {
                 if ( !e.ctrlKey ) return;
 
@@ -221,6 +227,16 @@
                 containerSelect.size = Math.min( selectedTab.containers.length, 5 );
             };
 
+            const saveAndClosePopup = async () => {
+                try { addHistoryEntry( url ); } catch { }
+                this.data = await GM.getValue( 'readLaterData', DEFAULT_DATA );
+                await this.saveLink( url, title, tabSelect.value, containerSelect.value );
+
+                // Fade out effect
+                popup.style.opacity = '0';
+                setTimeout( () => popup.remove(), 200 );
+            };
+
             tabSelect.addEventListener( 'change', updateContainers );
             updateContainers();
 
@@ -235,15 +251,6 @@
                     window.close();
                 } );
 
-                const saveAndClosePopup = async () => {
-                    try { addHistoryEntry( url ); } catch { }
-                    this.data = await GM.getValue( 'readLaterData', DEFAULT_DATA );
-                    await this.saveLink( url, title, tabSelect.value, containerSelect.value );
-
-                    // Fade out effect
-                    popup.style.opacity = '0';
-                    setTimeout( () => popup.remove(), 200 );
-                };
                 buttonContainer.appendChild( saveAndCloseBtn );
             }
 
@@ -269,16 +276,19 @@
                 popup.style.top = `${ viewportHeight - rect.height - 20 }px`;
             }
 
-            // Close popup when clicking outside
-            document.addEventListener( 'click', function closePopup ( e ) {
-                if ( !popup.contains( e.target ) ) {
-                    popup.style.opacity = '0';
-                    setTimeout( () => {
-                        popup.remove();
-                        document.removeEventListener( 'click', closePopup );
-                    }, 200 );
-                }
-            } );
+            // Delay the close popup event listener to avoid immediate closure
+            setTimeout( () => {
+                // Close popup when clicking outside
+                document.addEventListener( 'click', function closePopup ( e ) {
+                    if ( !popup.contains( e.target ) ) {
+                        popup.style.opacity = '0';
+                        setTimeout( () => {
+                            popup.remove();
+                            document.removeEventListener( 'click', closePopup );
+                        }, 200 );
+                    }
+                } );
+            }, 100 ); // Adjust the delay as needed
         }
 
         deleteContainer ( containerId ) {
