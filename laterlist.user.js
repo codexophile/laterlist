@@ -152,36 +152,27 @@
 
             const popup = document.createElement( 'div' );
             popup.className = 'laterlist-popup';
-            style( popup, `
-        left: ${ event.clientX }px;
-        top: ${ event.clientY }px;
-        position: fixed;
-        background: #2e3440;
-        border: 1px solid #4c566a;
-        border-radius: 8px;
-        padding: 16px;
-        z-index: 999999;
-        color: #d8dee9;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        max-width: 300px;
-        width: 100%;
-    `);
+            popup.style.left = `${ event.clientX }px`;
+            popup.style.top = `${ event.clientY }px`;
+
+            // Fade in effect
+            requestAnimationFrame( () => {
+                popup.style.opacity = '1';
+            } );
 
             const titleElement = document.createElement( 'div' );
+            titleElement.className = 'laterlist-popup__title';
             titleElement.textContent = title;
-            titleElement.style.fontWeight = 'bold';
-            titleElement.style.marginBottom = '8px';
 
             const urlElement = document.createElement( 'div' );
+            urlElement.className = 'laterlist-popup__url';
             urlElement.textContent = url;
-            urlElement.style.fontSize = '0.9em';
-            urlElement.style.color = '#81a1c1';
-            urlElement.style.marginBottom = '16px';
 
-            const tabSelect = document.createElement( 'select' );
-            const containerSelect = document.createElement( 'select' );
-            const saveButton = document.createElement( 'button' );
+            const selectWrapper = document.createElement( 'div' );
+            selectWrapper.className = 'laterlist-popup__select-wrapper';
+
+            const tabSelect = createSelect();
+            const containerSelect = createSelect();
 
             // Populate tab select
             this.data.tabs.forEach( tab => {
@@ -190,7 +181,27 @@
                 option.textContent = tab.name;
                 tabSelect.appendChild( option );
             } );
-            tabSelect.size = this.data.tabs.length;
+            tabSelect.size = Math.min( this.data.tabs.length, 5 );
+
+            // Helper function to create styled select elements
+            function createSelect () {
+                const select = document.createElement( 'select' );
+                select.className = 'laterlist-popup__select';
+                return select;
+            }
+
+            // Helper function to create buttons
+            function createButton ( text, isPrimary = false ) {
+                const button = document.createElement( 'button' );
+                button.textContent = text;
+                button.className = `laterlist-popup__button ${ isPrimary ? 'laterlist-popup__button--primary' : '' }`;
+                return button;
+            }
+
+            const saveButton = createButton( '💾 Save', true );
+            saveButton.addEventListener( 'click', () => {
+                saveAndClosePopup();
+            } );
 
             // Update container select based on selected tab
             const updateContainers = () => {
@@ -207,25 +218,18 @@
                     option.textContent = container.name;
                     containerSelect.appendChild( option );
                 } );
-                containerSelect.size = selectedTab.containers.length;
+                containerSelect.size = Math.min( selectedTab.containers.length, 5 );
             };
 
             tabSelect.addEventListener( 'change', updateContainers );
             updateContainers();
 
-            saveButton.textContent = '💾 Save';
-            saveButton.addEventListener( 'click', () => {
-                saveAndClosePopup();
-            } );
-
-            popup.appendChild( titleElement );
-            popup.appendChild( urlElement );
-            popup.appendChild( tabSelect );
-            popup.appendChild( containerSelect );
-            popup.appendChild( saveButton );
+            const buttonContainer = document.createElement( 'div' );
+            buttonContainer.className = 'laterlist-popup__button-container';
+            buttonContainer.appendChild( saveButton );
 
             if ( !targetAnchor ) {
-                const saveAndCloseBtn = generateElements( '<button>💾❌ Save & Close</button>' );
+                const saveAndCloseBtn = createButton( '💾 Save & Close' );
                 saveAndCloseBtn.addEventListener( 'click', async () => {
                     await saveAndClosePopup();
                     window.close();
@@ -235,10 +239,21 @@
                     try { addHistoryEntry( url ); } catch { }
                     this.data = await GM.getValue( 'readLaterData', DEFAULT_DATA );
                     await this.saveLink( url, title, tabSelect.value, containerSelect.value );
-                    popup.remove();
+
+                    // Fade out effect
+                    popup.style.opacity = '0';
+                    setTimeout( () => popup.remove(), 200 );
                 };
-                popup.appendChild( saveAndCloseBtn );
+                buttonContainer.appendChild( saveAndCloseBtn );
             }
+
+            selectWrapper.appendChild( tabSelect );
+            selectWrapper.appendChild( containerSelect );
+
+            popup.appendChild( titleElement );
+            popup.appendChild( urlElement );
+            popup.appendChild( selectWrapper );
+            popup.appendChild( buttonContainer );
 
             document.body.appendChild( popup );
 
@@ -248,17 +263,20 @@
             const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
 
             if ( rect.right > viewportWidth ) {
-                popup.style.left = `${ viewportWidth - rect.width - 10 }px`;
+                popup.style.left = `${ viewportWidth - rect.width - 20 }px`;
             }
             if ( rect.bottom > viewportHeight ) {
-                popup.style.top = `${ viewportHeight - rect.height - 10 }px`;
+                popup.style.top = `${ viewportHeight - rect.height - 20 }px`;
             }
 
             // Close popup when clicking outside
             document.addEventListener( 'click', function closePopup ( e ) {
                 if ( !popup.contains( e.target ) ) {
-                    popup.remove();
-                    document.removeEventListener( 'click', closePopup );
+                    popup.style.opacity = '0';
+                    setTimeout( () => {
+                        popup.remove();
+                        document.removeEventListener( 'click', closePopup );
+                    }, 200 );
                 }
             } );
         }
