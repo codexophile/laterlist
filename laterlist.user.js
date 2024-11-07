@@ -106,6 +106,26 @@
             this.init();
         }
 
+        checkForDuplicateIds () {
+            const idMap = new Map();
+            const duplicateIds = new Set();
+
+            // Iterate through all tabs and containers to find duplicate IDs
+            this.data.tabs.forEach( tab => {
+                tab.containers.forEach( container => {
+                    container.links.forEach( link => {
+                        if ( idMap.has( link.id ) ) {
+                            duplicateIds.add( link.id );
+                        } else {
+                            idMap.set( link.id, true );
+                        }
+                    } );
+                } );
+            } );
+
+            return duplicateIds;
+        }
+
         getTotalLinks () {
             const tabLinks = this.data.tabs.reduce( ( total, tab ) =>
                 total + tab.containers.reduce( ( containerTotal, container ) =>
@@ -386,6 +406,8 @@
         }
 
         renderTabs () {
+            const duplicateIds = this.checkForDuplicateIds();
+
             return this.data.tabs.map( tab => {
                 // Create a map to track URLs and their counts
                 const urlMap = new Map();
@@ -429,7 +451,7 @@
                             <div class="container-content" data-container-id="${ container.id }" data-tab-id="${ tab.id }">
                                 ${ this.isFaviconView
                         ? container.links.map( link => `
-                                        <div class="link ${ urlMap.get( link.url ) > 1 ? 'duplicate-link' : '' }" data-link-id="${ link.id }" style="display: inline-block; padding: 8px;">
+                                        <div class="link ${ urlMap.get( link.url ) > 1 ? 'duplicate-link' : '' } ${ duplicateIds.has( link.id ) ? 'duplicate-id' : '' }" data-link-id="${ link.id }" style="display: inline-block; padding: 8px;">
                                             <a href="${ link.url }" target="_blank">
                                                 <img src="https://www.google.com/s2/favicons?domain=${ new URL( link.url ).hostname }" 
                                                      alt="favicon" style="width: 32px; height: 32px;">
@@ -437,7 +459,7 @@
                                         </div>
                                     `).join( '' )
                         : container.links.map( link => `
-                                        <div class="link ${ urlMap.get( link.url ) > 1 ? 'duplicate-link' : '' }" data-link-id="${ link.id }">
+                                        <div class="link ${ urlMap.get( link.url ) > 1 ? 'duplicate-link' : '' } ${ duplicateIds.has( link.id ) ? 'duplicate-id' : '' }" data-link-id="${ link.id }">
                                             <img src="https://www.google.com/s2/favicons?domain=${ new URL( link.url ).hostname }" 
                                                  alt="favicon" style="width: 16px; height: 16px; margin-right: 8px;">
                                             <a href="${ link.url }" 

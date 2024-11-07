@@ -280,6 +280,11 @@ body {
     padding: 12px;
 }
 
+.duplicate-id {
+    border: 2px solid purple;
+    background-color: #ffcccc; /* Light red background for duplicate IDs */
+}
+
 .duplicate-link {
     background-color: #ffcccc; /* Light red background for duplicate links */
     border: 1px solid #ff6666; /* Red border for duplicate links */
