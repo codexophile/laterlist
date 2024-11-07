@@ -461,6 +461,7 @@
             return `
                 <div class="trash-container">
                     <h2>Trash</h2>
+                    <div id=trash-items>
                     ${ this.data.trash.map( link => `
                         <div class="trash-link" data-link-id="${ link.id }">
                             <a href="${ link.url }" target="_blank">${ link.title }</a>
@@ -470,6 +471,7 @@
                             </div>
                         </div>
                     `).join( '' ) }
+                    </div>
                     ${ this.data.trash.length > 0 ? `
                         <button class="btn empty-trash-btn" id="emptyTrash">Empty Trash</button>
                     ` : '<p>Trash is empty</p>' }
@@ -657,7 +659,7 @@
 
                     const deleteLink = newButton.dataset.deleteLink;
                     if ( deleteLink ) {
-                        this.moveToTrash( deleteLink );
+                        this.deleteLink( deleteLink );
                     }
                 }, { capture: true } );
 
@@ -671,6 +673,7 @@
                     }, { capture: true } );
                 }
             } );
+
 
             // Add rename container button event listeners
             document.querySelectorAll( '.btn-rename' ).forEach( button => {
@@ -974,8 +977,6 @@
             this.render();
         }
 
-
-
         addTab () {
             const name = prompt( 'Enter tab name:' );
             if ( !name ) return;
@@ -1026,6 +1027,27 @@
             container.name = newName;
             this.saveData();
             this.render();
+        }
+
+        deleteLink ( linkId ) {
+            const currentTab = this.getCurrentTab();
+            let linkDeleted = false;
+
+            // Iterate through containers to find and delete the link
+            for ( const container of currentTab.containers ) {
+                const linkIndex = container.links.findIndex( link => link.id === linkId );
+                if ( linkIndex !== -1 ) {
+                    container.links.splice( linkIndex, 1 );
+                    linkDeleted = true;
+                    break; // Exit the loop once the link is deleted
+                }
+            }
+
+            if ( linkDeleted ) {
+                this.saveData();
+                // Only re-render the current tab to avoid unnecessary re-renders
+                this.renderTabs();
+            }
         }
 
         async pullTabsIntoContainer ( containerId ) {
