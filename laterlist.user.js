@@ -1154,15 +1154,6 @@
             }
         }
 
-        deleteLink ( linkId ) {
-            const currentTab = this.getCurrentTab();
-            currentTab.containers.forEach( container => {
-                container.links = container.links.filter( link => link.id !== linkId );
-            } );
-            this.saveData();
-            this.render();
-        }
-
         exportData () {
             const dataStr = JSON.stringify( this.data, null, 2 );
             const blob = new Blob( [ dataStr ], { type: 'application/json' } );
