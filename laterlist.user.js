@@ -106,6 +106,52 @@
             this.init();
         }
 
+        async saveLink ( url, title, tabId, containerId ) {
+            const tab = this.data.tabs.find( t => t.id === tabId );
+            const container = tab.containers.find( c => c.id === containerId );
+
+            const newLink = {
+                id: 'link-' + Date.now(),
+                title: title || url,
+                url: url
+            };
+
+            container.links.push( newLink );
+            await this.saveData();
+        }
+
+        init () {
+            const hash = window.location.hash.slice( 1 ); // Remove the '#'
+            if ( hash === 'trash' ) {
+                this.activeTab = 'trash';
+            } else if ( hash.startsWith( 'tab/' ) ) {
+                const tabId = hash.split( '/' ).pop();
+                this.activeTab = tabId;
+            } else {
+                this.activeTab = this.data.tabs[ 0 ].id; // Default to the first tab
+            }
+
+            this.render();
+            this.initSortable();
+            this.initContainerSortable(); // Initialize Sortable for containers
+            document.querySelector( `.tab-section` ).scrollIntoView();
+
+            // Set up ValueChangeListener
+            GM_addValueChangeListener( 'readLaterData', ( name, oldValue, newValue, remote ) => {
+                if ( remote ) {
+                    this.data = newValue;
+                    this.render();
+                }
+            } );
+        }
+
+        async saveData () {
+            await GM.setValue( 'readLaterData', this.data );
+            // Debugging: Log the saved data
+        }
+
+        //* helper methods
+
         checkForDuplicateIds () {
             const idMap = new Map();
             const duplicateIds = new Set();
@@ -133,6 +179,56 @@
             return tabLinks + this.data.trash.length;
         }
 
+        getTotalLinksInTab ( tab ) {
+            return tab.containers.reduce( ( total, container ) => total + container.links.length, 0 );
+        }
+
+        getCurrentTab () {
+            return this.data.tabs.find( tab => tab.id === this.activeTab );
+        }
+
+        restoreFromTrash ( linkId ) {
+            const linkIndex = this.data.trash.findIndex( link => link.id === linkId );
+            if ( linkIndex !== -1 ) {
+                const [ link ] = this.data.trash.splice( linkIndex, 1 );
+                // Add to first container of first tab
+                if ( this.data.tabs[ 0 ].containers.length === 0 ) {
+                    this.data.tabs[ 0 ].containers.push( {
+                        id: 'container-' + Date.now(),
+                        name: 'Restored Items',
+                        links: []
+                    } );
+                }
+                this.data.tabs[ 0 ].containers[ 0 ].links.push( link );
+                this.saveData();
+                this.render();
+            }
+        }
+
+        permanentDelete ( linkId ) {
+            this.data.trash = this.data.trash.filter( link => link.id !== linkId );
+            this.saveData();
+            this.render();
+        }
+
+        switchTab ( tabId ) {
+            if ( this.isDragging ) return; // Don't switch tabs during drag
+
+            this.activeTab = tabId;
+
+            // Update the URL based on the active tab or trash using hash-based routing
+            if ( tabId === 'trash' ) {
+                window.location.hash = 'trash';
+            } else {
+                window.location.hash = `tab/${ tabId }`;
+            }
+
+            // Re-render the entire view when switching between normal tabs and trash
+            this.render();
+        }
+
+        //* header functionality
+
         // Modify the toggleView method to preserve link state
         toggleView () {
             this.isFaviconView = !this.isFaviconView;
@@ -146,6 +242,8 @@
             // Re-initialize sortable after view change
             this.initSortable();
         }
+
+        //* methods for other pages
 
         async initContextMenu () {
 
@@ -311,6 +409,8 @@
             }, 100 ); // Adjust the delay as needed
         }
 
+        //* container header functionality
+
         deleteContainer ( containerId ) {
             const currentTab = this.getCurrentTab();
             const containerIndex = currentTab.containers.findIndex( c => c.id === containerId );
@@ -323,49 +423,35 @@
             }
         }
 
-        async saveLink ( url, title, tabId, containerId ) {
-            const tab = this.data.tabs.find( t => t.id === tabId );
-            const container = tab.containers.find( c => c.id === containerId );
-
-            const newLink = {
-                id: 'link-' + Date.now(),
-                title: title || url,
-                url: url
-            };
-
-            container.links.push( newLink );
-            await this.saveData();
-        }
-
-        init () {
-            const hash = window.location.hash.slice( 1 ); // Remove the '#'
-            if ( hash === 'trash' ) {
-                this.activeTab = 'trash';
-            } else if ( hash.startsWith( 'tab/' ) ) {
-                const tabId = hash.split( '/' ).pop();
-                this.activeTab = tabId;
-            } else {
-                this.activeTab = this.data.tabs[ 0 ].id; // Default to the first tab
+        trashAllLinksInContainer ( containerId ) {
+            const currentTab = this.getCurrentTab();
+            const container = currentTab.containers.find( c => c.id === containerId );
+            if ( container ) {
+                // Move all links from the container to the trash
+                this.data.trash.push( ...container.links );
+                container.links = [];
+                this.saveData();
+                this.render();
             }
+        }
 
-            this.render();
-            this.initSortable();
-            this.initContainerSortable(); // Initialize Sortable for containers
-            document.querySelector( `.tab-section` ).scrollIntoView();
+        //* link buttons functionality
 
-            // Set up ValueChangeListener
-            GM_addValueChangeListener( 'readLaterData', ( name, oldValue, newValue, remote ) => {
-                if ( remote ) {
-                    this.data = newValue;
-                    this.render();
+        moveToTrash ( linkId ) {
+            const currentTab = this.getCurrentTab();
+            for ( const container of currentTab.containers ) {
+                const linkIndex = container.links.findIndex( link => link.id === linkId );
+                if ( linkIndex !== -1 ) {
+                    const [ link ] = container.links.splice( linkIndex, 1 );
+                    this.data.trash.push( link );
+                    break;
                 }
-            } );
+            }
+            this.saveData();
+            this.render();
         }
 
-        async saveData () {
-            await GM.setValue( 'readLaterData', this.data );
-            // Debugging: Log the saved data
-        }
+        //* render methods
 
         render () {
             const app = document.getElementById( 'app' );
@@ -502,10 +588,8 @@
         }
 
 
-        getTotalLinksInTab ( tab ) {
-            return tab.containers.reduce( ( total, container ) => total + container.links.length, 0 );
-        }
 
+        //! unused
 
         getTemplate () {
             return `
@@ -544,10 +628,6 @@
                     <button class="btn" id="addContainer">Add Container</button>
                 </div>
             `;
-        }
-
-        getCurrentTab () {
-            return this.data.tabs.find( tab => tab.id === this.activeTab );
         }
 
         //* Event listeners
@@ -767,71 +847,11 @@
 
         }
 
-        trashAllLinksInContainer ( containerId ) {
-            const currentTab = this.getCurrentTab();
-            const container = currentTab.containers.find( c => c.id === containerId );
-            if ( container ) {
-                // Move all links from the container to the trash
-                this.data.trash.push( ...container.links );
-                container.links = [];
-                this.saveData();
-                this.render();
-            }
-        }
 
-        moveToTrash ( linkId ) {
-            const currentTab = this.getCurrentTab();
-            for ( const container of currentTab.containers ) {
-                const linkIndex = container.links.findIndex( link => link.id === linkId );
-                if ( linkIndex !== -1 ) {
-                    const [ link ] = container.links.splice( linkIndex, 1 );
-                    this.data.trash.push( link );
-                    break;
-                }
-            }
-            this.saveData();
-            this.render();
-        }
 
-        restoreFromTrash ( linkId ) {
-            const linkIndex = this.data.trash.findIndex( link => link.id === linkId );
-            if ( linkIndex !== -1 ) {
-                const [ link ] = this.data.trash.splice( linkIndex, 1 );
-                // Add to first container of first tab
-                if ( this.data.tabs[ 0 ].containers.length === 0 ) {
-                    this.data.tabs[ 0 ].containers.push( {
-                        id: 'container-' + Date.now(),
-                        name: 'Restored Items',
-                        links: []
-                    } );
-                }
-                this.data.tabs[ 0 ].containers[ 0 ].links.push( link );
-                this.saveData();
-                this.render();
-            }
-        }
 
-        permanentDelete ( linkId ) {
-            this.data.trash = this.data.trash.filter( link => link.id !== linkId );
-            this.saveData();
-            this.render();
-        }
 
-        switchTab ( tabId ) {
-            if ( this.isDragging ) return; // Don't switch tabs during drag
 
-            this.activeTab = tabId;
-
-            // Update the URL based on the active tab or trash using hash-based routing
-            if ( tabId === 'trash' ) {
-                window.location.hash = 'trash';
-            } else {
-                window.location.hash = `tab/${ tabId }`;
-            }
-
-            // Re-render the entire view when switching between normal tabs and trash
-            this.render();
-        }
 
         initSortable () {
             document.querySelectorAll( '.container-content' ).forEach( container => {
