@@ -150,6 +150,81 @@
             // Debugging: Log the saved data
         }
 
+        initSortable () {
+            document.querySelectorAll( '.container-content' ).forEach( container => {
+                new Sortable( container, {
+                    filter: '.btn-delete', // Add this to prevent dragging from delete buttons
+                    preventOnFilter: true,  // Add this to prevent default action when clicking filtered elements
+                    group: 'links',
+                    animation: 150,
+                    ghostClass: 'sortable-ghost',
+                    dragClass: 'sortable-drag',
+                    forceFallback: true,
+                    fallbackClass: 'sortable-fallback',
+                    onStart: ( evt ) => {
+                        document.body.classList.add( 'dragging-active' );
+                        this.isDragging = true;
+                        evt.item.classList.add( 'dragging' );
+                    },
+                    onEnd: ( evt ) => {
+                        document.body.classList.remove( 'dragging-active' );
+                        this.isDragging = false;
+                        evt.item.classList.remove( 'dragging' );
+                        this.handleLinkMove( evt );
+                        document.querySelectorAll( '.containers' ).forEach( cont => {
+                            cont.classList.remove( 'drag-hover' );
+                        } );
+                    },
+                    onChange: ( evt ) => {
+                        document.querySelectorAll( '.containers' ).forEach( cont => {
+                            cont.classList.remove( 'drag-hover' );
+                        } );
+                        if ( evt.to ) {
+                            evt.to.closest( '.containers' ).classList.add( 'drag-hover' );
+                        }
+                    }
+                } );
+            } );
+        }
+
+        initContainerSortable () {
+            document.querySelectorAll( '.containers' ).forEach( containers => {
+                new Sortable( containers, {
+                    group: 'containers',
+                    animation: 150,
+                    ghostClass: 'sortable-ghost',
+                    dragClass: 'sortable-drag',
+                    forceFallback: true,
+                    fallbackClass: 'sortable-fallback',
+                    filter: '.btn',  // Ignore buttons
+                    preventOnFilter: true,
+                    onStart: ( evt ) => {
+                        document.body.classList.add( 'dragging-active' );
+                        this.isDragging = true;
+                        evt.item.classList.add( 'dragging' );
+                    },
+                    onEnd: ( evt ) => {
+                        document.body.classList.remove( 'dragging-active' );
+                        this.isDragging = false;
+                        evt.item.classList.remove( 'dragging' );
+                        this.handleContainerMove( evt );
+                        document.querySelectorAll( '.containers' ).forEach( cont => {
+                            cont.classList.remove( 'drag-hover' );
+                        } );
+                    },
+                    onChange: ( evt ) => {
+                        document.querySelectorAll( '.containers' ).forEach( cont => {
+                            cont.classList.remove( 'drag-hover' );
+                        } );
+                        if ( evt.to ) {
+                            evt.to.closest( '.containers' ).classList.add( 'drag-hover' );
+                        }
+                    }
+                } );
+
+            } );
+        }
+
         //* helper methods
 
         checkForDuplicateIds () {
@@ -587,10 +662,6 @@
             `;
         }
 
-
-
-        //! unused
-
         //* Event listeners
         attachEventListeners () {
 
@@ -810,87 +881,6 @@
                 } );
             } );
 
-        }
-
-
-
-
-
-
-
-        initSortable () {
-            document.querySelectorAll( '.container-content' ).forEach( container => {
-                new Sortable( container, {
-                    filter: '.btn-delete', // Add this to prevent dragging from delete buttons
-                    preventOnFilter: true,  // Add this to prevent default action when clicking filtered elements
-                    group: 'links',
-                    animation: 150,
-                    ghostClass: 'sortable-ghost',
-                    dragClass: 'sortable-drag',
-                    forceFallback: true,
-                    fallbackClass: 'sortable-fallback',
-                    onStart: ( evt ) => {
-                        document.body.classList.add( 'dragging-active' );
-                        this.isDragging = true;
-                        evt.item.classList.add( 'dragging' );
-                    },
-                    onEnd: ( evt ) => {
-                        document.body.classList.remove( 'dragging-active' );
-                        this.isDragging = false;
-                        evt.item.classList.remove( 'dragging' );
-                        this.handleLinkMove( evt );
-                        document.querySelectorAll( '.containers' ).forEach( cont => {
-                            cont.classList.remove( 'drag-hover' );
-                        } );
-                    },
-                    onChange: ( evt ) => {
-                        document.querySelectorAll( '.containers' ).forEach( cont => {
-                            cont.classList.remove( 'drag-hover' );
-                        } );
-                        if ( evt.to ) {
-                            evt.to.closest( '.containers' ).classList.add( 'drag-hover' );
-                        }
-                    }
-                } );
-            } );
-        }
-
-        initContainerSortable () {
-            document.querySelectorAll( '.containers' ).forEach( containers => {
-                new Sortable( containers, {
-                    group: 'containers',
-                    animation: 150,
-                    ghostClass: 'sortable-ghost',
-                    dragClass: 'sortable-drag',
-                    forceFallback: true,
-                    fallbackClass: 'sortable-fallback',
-                    filter: '.btn',  // Ignore buttons
-                    preventOnFilter: true,
-                    onStart: ( evt ) => {
-                        document.body.classList.add( 'dragging-active' );
-                        this.isDragging = true;
-                        evt.item.classList.add( 'dragging' );
-                    },
-                    onEnd: ( evt ) => {
-                        document.body.classList.remove( 'dragging-active' );
-                        this.isDragging = false;
-                        evt.item.classList.remove( 'dragging' );
-                        this.handleContainerMove( evt );
-                        document.querySelectorAll( '.containers' ).forEach( cont => {
-                            cont.classList.remove( 'drag-hover' );
-                        } );
-                    },
-                    onChange: ( evt ) => {
-                        document.querySelectorAll( '.containers' ).forEach( cont => {
-                            cont.classList.remove( 'drag-hover' );
-                        } );
-                        if ( evt.to ) {
-                            evt.to.closest( '.containers' ).classList.add( 'drag-hover' );
-                        }
-                    }
-                } );
-
-            } );
         }
 
         // Modify the handleLinkMove method to ensure link data persistence
