@@ -591,45 +591,6 @@
 
         //! unused
 
-        getTemplate () {
-            return `
-                <div class="header">
-                    <h1>Read Later</h1>
-                    <button class="btn btn-primary" id="addTab">New Tab</button>
-                </div>
-                <div class="tabs">
-                    ${ this.data.tabs.map( tab => `
-                        <div class="tab ${ tab.id === this.activeTab ? 'active' : '' }" data-tab-id="${ tab.id }">
-                            <span>${ tab.name }</span>
-                            <span class="tab-count">${ this.getTotalLinksInTab( tab ) }</span>
-                            ${ this.data.tabs.length > 1 ? `
-                                <button class="btn btn-delete" data-delete-tab="${ tab.id }">×</button>
-                            ` : '' }
-                        </div>
-                    `).join( '' ) }
-                </div>
-                <div class="containers">
-                    ${ this.getCurrentTab().containers.map( container => `
-                        <div class="container">
-                            <div class="container-header">
-                                <span class="container-name" data-container-id="${ container.id }">${ container.name }</span>
-                                <button class="btn btn-delete" data-delete-container="${ container.id }">×</button>
-                            </div>
-                            <div class="container-content" data-container-id="${ container.id }">
-                                ${ container.links.map( link => `
-                                    <div class="link" data-link-id="${ link.id }">
-                                        <a href="${ link.url }" target="_blank">${ link.title }</a>
-                                        <button class="btn btn-delete" data-delete-link="${ link.id }">×</button>
-                                    </div>
-                                `).join( '' ) }
-                            </div>
-                        </div>
-                    `).join( '' ) }
-                    <button class="btn" id="addContainer">Add Container</button>
-                </div>
-            `;
-        }
-
         //* Event listeners
         attachEventListeners () {
 
@@ -749,6 +710,8 @@
 
             // Handle delete buttons with a more specific approach
             document.querySelectorAll( '.link .btn-delete' ).forEach( button => {
+
+
                 const link = button.closest( '.link' );
 
                 // Remove existing listeners
@@ -774,6 +737,8 @@
                         }
                     }, { capture: true } );
                 }
+
+
             } );
 
 
