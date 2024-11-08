@@ -121,19 +121,21 @@
         }
 
         init () {
-            const hash = window.location.hash.slice( 1 ); // Remove the '#'
+            const hash = window.location.hash.slice( 1 );
+            const defaultTabId = this.data.tabs[ 0 ]?.id || 'trash';
+
             if ( hash === 'trash' ) {
                 this.activeTab = 'trash';
             } else if ( hash.startsWith( 'tab/' ) ) {
                 const tabId = hash.split( '/' ).pop();
-                this.activeTab = tabId;
+                this.activeTab = this.data.tabs.find( tab => tab.id === tabId )?.id || defaultTabId;
             } else {
-                this.activeTab = this.data.tabs[ 0 ].id; // Default to the first tab
+                this.activeTab = defaultTabId;
             }
 
             this.render();
             this.initSortable();
-            this.initContainerSortable(); // Initialize Sortable for containers
+            this.initContainerSortable();
             document.querySelector( `.tab-section` ).scrollIntoView();
 
             // Set up ValueChangeListener
@@ -289,18 +291,30 @@
         switchTab ( tabId ) {
             if ( this.isDragging ) return; // Don't switch tabs during drag
 
+            // Temporarily disable the hashchange event listener
+            const hashChangeHandler = () => { };
+            window.removeEventListener( 'hashchange', this.render );
+            window.addEventListener( 'hashchange', hashChangeHandler );
+
             this.activeTab = tabId;
 
-            // Update the URL based on the active tab or trash using hash-based routing
+            // Update the URL hash without triggering the event
             if ( tabId === 'trash' ) {
-                window.location.hash = 'trash';
+                history.replaceState( null, '', '#trash' );
             } else {
-                window.location.hash = `tab/${ tabId }`;
+                history.replaceState( null, '', `#tab/${ tabId }` );
             }
 
-            // Re-render the entire view when switching between normal tabs and trash
+            // Re-render after the tab ID is updated
             this.render();
+
+            // Restore the hashchange event listener
+            setTimeout( () => {
+                window.removeEventListener( 'hashchange', hashChangeHandler );
+                window.addEventListener( 'hashchange', () => this.render() );
+            }, 100 );
         }
+
 
         //* header functionality
 
