@@ -793,40 +793,6 @@
                 newLink.style.cssText = 'user-drag: none; -webkit-user-drag: none; user-select: none; -webkit-user-select: none;';
             } );
 
-            // Handle delete buttons with a more specific approach
-            document.querySelectorAll( '.link .btn-delete' ).forEach( button => {
-
-
-                const link = button.closest( '.link' );
-
-                // Remove existing listeners
-                const newButton = button.cloneNode( true );
-                button.parentNode.replaceChild( newButton, button );
-
-                newButton.addEventListener( 'pointerdown', ( e ) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-
-                    const deleteLink = newButton.dataset.deleteLink;
-                    if ( deleteLink ) {
-                        this.deleteLink( deleteLink );
-                    }
-                }, { capture: true } );
-
-                // Make sure the button and its parent link don't trigger sortable
-                newButton.draggable = false;
-                if ( link ) {
-                    link.addEventListener( 'pointerdown', ( e ) => {
-                        if ( e.target.classList.contains( 'btn-delete' ) ) {
-                            e.stopPropagation();
-                        }
-                    }, { capture: true } );
-                }
-
-
-            } );
-
-
             // Add rename container button event listeners
             document.querySelectorAll( '.btn-rename' ).forEach( button => {
                 button.addEventListener( 'click', ( e ) => {
@@ -1041,6 +1007,8 @@
         }
 
         deleteLink ( linkId ) {
+            alert();
+            return;
             const currentTab = this.getCurrentTab();
             let linkDeleted = false;
 
