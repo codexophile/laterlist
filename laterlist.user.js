@@ -1006,29 +1006,6 @@
             this.render();
         }
 
-        deleteLink ( linkId ) {
-            alert();
-            return;
-            const currentTab = this.getCurrentTab();
-            let linkDeleted = false;
-
-            // Iterate through containers to find and delete the link
-            for ( const container of currentTab.containers ) {
-                const linkIndex = container.links.findIndex( link => link.id === linkId );
-                if ( linkIndex !== -1 ) {
-                    container.links.splice( linkIndex, 1 );
-                    linkDeleted = true;
-                    break; // Exit the loop once the link is deleted
-                }
-            }
-
-            if ( linkDeleted ) {
-                this.saveData();
-                // Only re-render the current tab to avoid unnecessary re-renders
-                this.renderTabs();
-            }
-        }
-
         async pullTabsIntoContainer ( containerId ) {
             const container = this.getCurrentTab().containers.find( c => c.id === containerId );
             if ( !container ) {
