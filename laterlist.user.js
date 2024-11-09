@@ -738,7 +738,6 @@
             document.addEventListener( 'click', ( e ) => {
                 const deleteTab = e.target.dataset.deleteTab;
                 const deleteContainer = e.target.dataset.deleteContainer;
-                const deleteLink = e.target.dataset.deleteLink;
                 const moveToTrash = e.target.dataset.moveToTrash;
                 const restoreLink = e.target.dataset.restoreLink;
                 const permanentDelete = e.target.dataset.permanentDelete;
@@ -746,7 +745,6 @@
 
                 if ( deleteTab ) this.deleteTab( deleteTab );
                 if ( deleteContainer ) this.deleteContainer( deleteContainer );
-                if ( deleteLink ) this.moveToTrash( deleteLink );
                 if ( moveToTrash && e.target.tagName === 'A' ) {
                     e.preventDefault();
                     this.moveToTrash( moveToTrash );
@@ -757,7 +755,39 @@
                 if ( renameContainer ) this.renameContainer( renameContainer );
             } );
 
-            // Handle links that should be moved to trash
+            document.querySelectorAll( '.link > .btn-delete' ).forEach( deleteBtn => {
+                // Remove any existing event listeners
+                const newDeleteBtn = deleteBtn.cloneNode( true );
+                deleteBtn.parentNode.replaceChild( newDeleteBtn, deleteBtn );
+
+                // Prevent all default behaviors
+                newDeleteBtn.addEventListener( 'pointerdown', ( e ) => {
+                    if ( e.button !== 0 ) return; // left button action
+
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    //? the event target, the delete button does not have the data attribute moveToTrash.
+                    //? so we find it in the sibling 'a' element
+                    const moveToTrash = e.currentTarget.parentElement.querySelector( 'a' ).dataset.moveToTrash;
+
+                    this.moveToTrash( moveToTrash );
+
+                }, { capture: true } );
+
+                // Prevent all other events that might interfere
+                [ 'click', 'dragstart', 'drag', 'mousedown' ].forEach( eventType => {
+                    newDeleteBtn.addEventListener( eventType, ( e ) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }, { capture: true } );
+                } );
+
+                // Disable all drag-related properties
+                newDeleteBtn.draggable = false;
+                newDeleteBtn.style.cssText = 'user-drag: none; -webkit-user-drag: none; user-select: none; -webkit-user-select: none;';
+            } );
+
             document.querySelectorAll( 'a[data-move-to-trash]' ).forEach( link => {
                 // Remove any existing event listeners
                 const newLink = link.cloneNode( true );
